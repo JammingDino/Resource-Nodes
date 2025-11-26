@@ -1,0 +1,44 @@
+{
+	"schemaVersion": 1,
+	"id": "jd_resource_nodes",
+	"version": "${version}",
+	"name": "Resource Nodes",
+	"description": "Resource Nodes introduces renewable versions of every vanilla ore that deplete into stone when mined and automatically regenerate over time based on configurable purity tiers. Designed for seamless automation, these nodes are fully compatible with machines like Create drills but can be relocated using Silk Touch or permanently removed by sneaking.",
+	"authors": [
+		"JammingDino"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/jd_resource_nodes/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"jammingdino.jd_resource_nodes.ResourceNodes"
+		],
+		"client": [
+			"jammingdino.jd_resource_nodes.ResourceNodesClient"
+		],
+		"fabric-datagen": [
+			"jammingdino.jd_resource_nodes.ResourceNodesDataGenerator"
+		]
+	},
+	"mixins": [
+		"jd_resource_nodes.mixins.json",
+		{
+			"config": "jd_resource_nodes.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.1",
+		"minecraft": ">=1.20 <1.20.2",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

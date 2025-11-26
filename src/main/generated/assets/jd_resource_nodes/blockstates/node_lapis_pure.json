@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "minecraft:block/lapis_ore"
+    },
+    "regenerating=true": {
+      "model": "minecraft:block/stone"
+    }
+  }
+}

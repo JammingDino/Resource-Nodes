@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "minecraft:block/nether_quartz_ore"
+    },
+    "regenerating=true": {
+      "model": "minecraft:block/netherrack"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "minecraft:block/deepslate_redstone_ore"
+    },
+    "regenerating=true": {
+      "model": "minecraft:block/deepslate"
+    }
+  }
+}

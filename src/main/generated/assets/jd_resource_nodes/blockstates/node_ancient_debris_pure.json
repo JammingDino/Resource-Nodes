@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "minecraft:block/ancient_debris"
+    },
+    "regenerating=true": {
+      "model": "minecraft:block/netherrack"
+    }
+  }
+}
