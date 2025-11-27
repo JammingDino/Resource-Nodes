@@ -18,6 +18,10 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.loot.context.LootContextParameterSet;
+import net.minecraft.loot.context.LootContextParameters;
+import java.util.List;
 
 public class ResourceNodeBlock extends BlockWithEntity {
     public static final BooleanProperty REGENERATING = BooleanProperty.of("regenerating");
@@ -95,9 +99,9 @@ public class ResourceNodeBlock extends BlockWithEntity {
             // Check if we are really being removed (turned to Air, Water, etc)
             if (newState.isAir() || !newState.isOf(this)) {
 
-                // 1. Check if a player explicitly asked to remove this (via the flag)
                 BlockEntity be = world.getBlockEntity(pos);
                 if (be instanceof ResourceNodeBlockEntity nodeBe) {
+                    // 1. Check if a player explicitly asked to remove this (via the flag)
                     if (nodeBe.isPermanentlyRemoved()) {
                         super.onStateReplaced(state, world, pos, newState, moved);
                         return; // Let it die
@@ -119,10 +123,51 @@ public class ResourceNodeBlock extends BlockWithEntity {
                             // It was fresh ore -> Start full timer
                             newNodeBe.activate(tier.getRegenerateTicks());
 
-                            // CRITICAL: Drop items for the machine!
-                            // Machines usually break the block. Since we revived it, we must manually drop the items.
-                            // We use originalOre's default state to simulate drops.
-                            dropStacks(originalOre.getDefaultState(), (ServerWorld) world, pos, null, null, ItemStack.EMPTY);
+                            // CRITICAL: Smart Drops
+                            if (world instanceof ServerWorld serverWorld) {
+                                BlockState oreState = originalOre.getDefaultState();
+
+                                LootContextParameterSet.Builder builder = new LootContextParameterSet.Builder(serverWorld)
+                                        .add(LootContextParameters.ORIGIN, pos.toCenterPos())
+                                        .add(LootContextParameters.TOOL, ItemStack.EMPTY) // Machines typically don't use tools
+                                        .add(LootContextParameters.BLOCK_STATE, oreState);
+
+                                List<ItemStack> drops = oreState.getDroppedStacks(builder);
+
+                                // --- Placement Logic ---
+                                BlockPos belowPos = pos.down();
+                                BlockPos abovePos = pos.up();
+
+                                // Check if blocks are "Solid" (Full Cube/Opaque).
+                                // !isSolidBlock allows Air, Water, Hoppers, Torches, etc.
+                                boolean canDropBelow = !world.getBlockState(belowPos).isSolidBlock(world, belowPos);
+                                boolean canDropAbove = !world.getBlockState(abovePos).isSolidBlock(world, abovePos);
+
+                                double spawnY;
+
+                                if (canDropBelow) {
+                                    // PREFERRED: Drop into the space below (e.g. into a Hopper or Air)
+                                    // pos.getY() - 0.5 is the vertical center of the block below
+                                    spawnY = pos.getY() - 0.5;
+                                } else if (canDropAbove) {
+                                    // SECONDARY: Drop onto the top of the node
+                                    spawnY = pos.getY() + 1.2;
+                                } else {
+                                    // FALLBACK: Both obstructed, default to top (will likely glitch out, but better than down)
+                                    spawnY = pos.getY() + 1.2;
+                                }
+
+                                for (ItemStack stack : drops) {
+                                    ItemEntity itemEntity = new ItemEntity(world, pos.getX() + 0.5, spawnY, pos.getZ() + 0.5, stack);
+
+                                    // Kill velocity so it doesn't drift into walls
+                                    itemEntity.setVelocity(0, 0, 0);
+                                    itemEntity.setToDefaultPickupDelay();
+
+                                    world.spawnEntity(itemEntity);
+                                }
+                            }
+
                         } else {
                             // It was already stone -> Keep old timer
                             newNodeBe.activate(oldTimer > 0 ? oldTimer : tier.getRegenerateTicks());
