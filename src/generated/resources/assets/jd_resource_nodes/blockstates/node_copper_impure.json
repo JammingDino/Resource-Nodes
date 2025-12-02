@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "jd_resource_nodes:block/node_copper_impure_ore"
+    },
+    "regenerating=true": {
+      "model": "jd_resource_nodes:block/node_copper_impure_stone"
+    }
+  }
+}

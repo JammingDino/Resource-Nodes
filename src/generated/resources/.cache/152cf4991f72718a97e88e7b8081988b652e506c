@@ -1,0 +1,6 @@
+// 1.21.1	2025-12-01T11:01:08.0033484	Tags for minecraft:block mod id jd_resource_nodes
+fba9492d0d630a40edeff3aebf0ac5f7686b0de5 data/create/tags/block/non_movable.json
+fba9492d0d630a40edeff3aebf0ac5f7686b0de5 data/minecraft/tags/block/mineable/pickaxe.json
+5eb7b8f4167fd9f059530ac5ee0353b396657a8d data/minecraft/tags/block/needs_diamond_tool.json
+6eb70df3c7ceaf6ea7f5ea59fcb2d3496156f1c2 data/minecraft/tags/block/needs_iron_tool.json
+0502d87d365daacf52def38c9f03ee97e4e632e8 data/minecraft/tags/block/needs_stone_tool.json

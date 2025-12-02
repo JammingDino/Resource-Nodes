@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "jd_resource_nodes:block/node_deepslate_diamond_normal_ore"
+    },
+    "regenerating=true": {
+      "model": "jd_resource_nodes:block/node_deepslate_diamond_normal_stone"
+    }
+  }
+}

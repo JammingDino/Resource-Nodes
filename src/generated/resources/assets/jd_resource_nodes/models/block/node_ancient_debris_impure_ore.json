@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "jd_resource_nodes:block/node_ancient_debris_impure_top",
+    "side": "jd_resource_nodes:block/node_ancient_debris_impure_side"
+  }
+}

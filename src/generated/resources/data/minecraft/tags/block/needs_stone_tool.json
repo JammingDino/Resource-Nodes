@@ -1,0 +1,22 @@
+{
+  "values": [
+    "jd_resource_nodes:node_copper_impure",
+    "jd_resource_nodes:node_copper_normal",
+    "jd_resource_nodes:node_copper_pure",
+    "jd_resource_nodes:node_deepslate_copper_impure",
+    "jd_resource_nodes:node_deepslate_copper_normal",
+    "jd_resource_nodes:node_deepslate_copper_pure",
+    "jd_resource_nodes:node_iron_impure",
+    "jd_resource_nodes:node_iron_normal",
+    "jd_resource_nodes:node_iron_pure",
+    "jd_resource_nodes:node_deepslate_iron_impure",
+    "jd_resource_nodes:node_deepslate_iron_normal",
+    "jd_resource_nodes:node_deepslate_iron_pure",
+    "jd_resource_nodes:node_lapis_impure",
+    "jd_resource_nodes:node_lapis_normal",
+    "jd_resource_nodes:node_lapis_pure",
+    "jd_resource_nodes:node_deepslate_lapis_impure",
+    "jd_resource_nodes:node_deepslate_lapis_normal",
+    "jd_resource_nodes:node_deepslate_lapis_pure"
+  ]
+}
