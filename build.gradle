@@ -186,3 +186,9 @@ idea {
         downloadJavadoc = true
     }
 }
+
+tasks.named('test') {
+    // This tells Gradle not to fail if it finds source files (TextureBaker)
+    // but no actual JUnit tests to run.
+    failOnNoDiscoveredTests = false
+}
