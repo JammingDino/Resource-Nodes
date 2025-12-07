@@ -56,5 +56,7 @@
   "block.jd_resource_nodes.node_redstone_impure": "Node Redstone Impure",
   "block.jd_resource_nodes.node_redstone_normal": "Node Redstone Normal",
   "block.jd_resource_nodes.node_redstone_pure": "Node Redstone Pure",
-  "itemGroup.jd_resource_nodes.general": "Resource Nodes"
+  "itemGroup.jd_resource_nodes.general": "Resource Nodes",
+  "key.categories.jd_resource_nodes": "Resource Nodes",
+  "key.jd_resource_nodes.ping": "Resource Node Scan"
 }

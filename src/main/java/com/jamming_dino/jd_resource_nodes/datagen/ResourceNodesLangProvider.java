@@ -14,6 +14,8 @@ public class ResourceNodesLangProvider extends LanguageProvider {
     @Override
     protected void addTranslations() {
         add("itemGroup.jd_resource_nodes.general", "Resource Nodes");
+        add("key.jd_resource_nodes.ping", "Resource Node Scan"); // NEW
+        add("key.categories.jd_resource_nodes", "Resource Nodes");
 
         for (DeferredBlock<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
             String path = holder.getId().getPath();
