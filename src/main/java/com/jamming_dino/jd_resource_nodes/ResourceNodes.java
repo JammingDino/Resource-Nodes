@@ -2,6 +2,7 @@ package com.jamming_dino.jd_resource_nodes;
 
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
+import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -108,6 +109,7 @@ public class ResourceNodes {
 
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);
+        modEventBus.addListener(ResourceNodesKeys::registerKeys);
     }
 
     // --- Helper Methods ---
