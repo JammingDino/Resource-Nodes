@@ -2,6 +2,7 @@ package com.jamming_dino.jd_resource_nodes.client;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodeData;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
+import com.jamming_dino.jd_resource_nodes.ResourceNodesConfig;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -122,8 +123,6 @@ public class ScannerHandler {
                 }
             }
         }
-
-        // Handle radial menu - no longer needed here, handled in onKeyInput
     }
 
     private static void openRadialMenu(Minecraft mc) {
@@ -261,21 +260,23 @@ public class ScannerHandler {
         }
 
         // =============================================================
-        // PHASE 3: TEXT
+        // PHASE 3: TEXT (only if enabled in config)
         // =============================================================
-        RenderSystem.setShader(() -> null);
-        RenderSystem.lineWidth(1.0f);
+        if (ResourceNodesConfig.isTextEnabled()) {
+            RenderSystem.setShader(() -> null);
+            RenderSystem.lineWidth(1.0f);
 
-        MultiBufferSource.BufferSource textBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(1536));
+            MultiBufferSource.BufferSource textBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(1536));
 
-        for (ScanResult ping : activePings) {
-            float alpha = calculateAlpha(ping);
-            if (alpha <= 0.1) continue;
+            for (ScanResult ping : activePings) {
+                float alpha = calculateAlpha(ping);
+                if (alpha <= 0.1) continue;
 
-            renderPingText(poseStack, textBuffer, mc, cameraPos, ping, alpha);
+                renderPingText(poseStack, textBuffer, mc, cameraPos, ping, alpha);
+            }
+
+            textBuffer.endBatch();
         }
-
-        textBuffer.endBatch();
 
         // --- RESTORE STATE ---
         RenderSystem.depthMask(true);
@@ -401,8 +402,10 @@ public class ScannerHandler {
         poseStack.translate(dx + 0.5, dy + 1.5, dz + 0.5);
         poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
 
+        // Apply text scale from config
         float baseScale = 0.025F;
-        float constantScale = baseScale * (float)Math.max(currentDistance, 4.0) / 4.0f;
+        float configScale = ResourceNodesConfig.getTextScale();
+        float constantScale = baseScale * configScale * (float)Math.max(currentDistance, 4.0) / 4.0f;
         poseStack.scale(constantScale, -constantScale, constantScale);
 
         Component text = Component.literal(ping.name.getString() + " (" + (int)currentDistance + "m)");
