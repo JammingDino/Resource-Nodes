@@ -56,6 +56,13 @@
   "block.jd_resource_nodes.node_redstone_impure": "Node Redstone Impure",
   "block.jd_resource_nodes.node_redstone_normal": "Node Redstone Normal",
   "block.jd_resource_nodes.node_redstone_pure": "Node Redstone Pure",
+  "config.jd_resource_nodes.impure_ticks": "Impure Regeneration Ticks",
+  "config.jd_resource_nodes.normal_ticks": "Normal Regeneration Ticks",
+  "config.jd_resource_nodes.pure_ticks": "Pure Regeneration Ticks",
+  "config.jd_resource_nodes.regeneration": "Regeneration Settings",
+  "config.jd_resource_nodes.text_enabled": "Pinger Text",
+  "config.jd_resource_nodes.text_scale": "Text Scale",
+  "config.jd_resource_nodes.title": "Resource Nodes Config",
   "itemGroup.jd_resource_nodes.general": "Resource Nodes",
   "key.categories.jd_resource_nodes": "Resource Nodes",
   "key.jd_resource_nodes.ping": "Resource Node Scan"

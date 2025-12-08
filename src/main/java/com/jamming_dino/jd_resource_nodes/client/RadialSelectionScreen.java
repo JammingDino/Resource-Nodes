@@ -1,10 +1,12 @@
 package com.jamming_dino.jd_resource_nodes.client;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodeData;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
@@ -67,7 +69,7 @@ public class RadialSelectionScreen extends Screen {
 
             // Draw selection indicator if hovered
             if (isHovered) {
-                drawCircle(graphics, (int) x, (int) y, 20, 0xFF00FF00);
+                drawCircle(graphics, (int) x, (int) y, 20, 0xFFF9801D);
             } else {
                 drawCircle(graphics, (int) x, (int) y, 18, 0xFF666666);
             }
@@ -146,15 +148,26 @@ public class RadialSelectionScreen extends Screen {
         }
     }
 
+
     private void drawCircle(GuiGraphics graphics, int centerX, int centerY, int radius, int color) {
-        // Draw a filled circle using multiple rectangles (approximation)
-        for (int y = -radius; y <= radius; y++) {
-            for (int x = -radius; x <= radius; x++) {
-                if (x * x + y * y <= radius * radius) {
-                    graphics.fill(centerX + x, centerY + y, centerX + x + 1, centerY + y + 1, color);
-                }
-            }
-        }
+        ResourceLocation CIRCLE_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+                "jd_resource_nodes",
+                "textures/gui/circle_large.png"
+        );
+
+        float alpha = ((color >> 24) & 0xFF) / 255f;
+        float red = ((color >> 16) & 0xFF) / 255f;
+        float green = ((color >> 8) & 0xFF) / 255f;
+        float blue = (color & 0xFF) / 255f;
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(red, green, blue, alpha);
+
+        int size = radius * 2;
+        graphics.blit(CIRCLE_TEXTURE, centerX - radius, centerY - radius, 0, 0, size, size, size, size);
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public List<Block> getSelectedBlocks() {
