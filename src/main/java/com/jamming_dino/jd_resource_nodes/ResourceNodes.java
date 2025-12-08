@@ -6,10 +6,7 @@ import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -39,44 +36,64 @@ public class ResourceNodes {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
     // --- Storage for DataGen and Logic ---
-    // We store the DeferredBlock references here so we can access them later (e.g. for the BlockEntity or Tag Generation)
     public static final List<DeferredBlock<ResourceNodeBlock>> REGISTERED_NODES = new ArrayList<>();
 
+    // Storage for linking categories to deferred blocks (resolved later)
+    private static final List<CategoryRegistration> PENDING_CATEGORY_REGISTRATIONS = new ArrayList<>();
+
+    private static class CategoryRegistration {
+        final String category;
+        final DeferredBlock<ResourceNodeBlock> block;
+
+        CategoryRegistration(String category, DeferredBlock<ResourceNodeBlock> block) {
+            this.category = category;
+            this.block = block;
+        }
+    }
+
     // --- Static Initialization of Nodes ---
-    // This runs as soon as the class is loaded, populating the BLOCKS and ITEMS registries before they are registered to the bus.
     static {
-        registerNodeSet("coal", Blocks.COAL_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_coal", Blocks.DEEPSLATE_COAL_ORE, Blocks.DEEPSLATE);
+        // Coal nodes - output coal (group all variants together)
+        registerNodeSet("coal", Blocks.COAL_ORE, Blocks.STONE, Items.COAL, "coal");
+        registerNodeSet("deepslate_coal", Blocks.DEEPSLATE_COAL_ORE, Blocks.DEEPSLATE, Items.COAL, "coal");
 
-        registerNodeSet("copper", Blocks.COPPER_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_copper", Blocks.DEEPSLATE_COPPER_ORE, Blocks.DEEPSLATE);
+        // Copper nodes - output raw copper
+        registerNodeSet("copper", Blocks.COPPER_ORE, Blocks.STONE, Items.RAW_COPPER, "copper");
+        registerNodeSet("deepslate_copper", Blocks.DEEPSLATE_COPPER_ORE, Blocks.DEEPSLATE, Items.RAW_COPPER, "copper");
 
-        registerNodeSet("iron", Blocks.IRON_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_iron", Blocks.DEEPSLATE_IRON_ORE, Blocks.DEEPSLATE);
+        // Iron nodes - output raw iron
+        registerNodeSet("iron", Blocks.IRON_ORE, Blocks.STONE, Items.RAW_IRON, "iron");
+        registerNodeSet("deepslate_iron", Blocks.DEEPSLATE_IRON_ORE, Blocks.DEEPSLATE, Items.RAW_IRON, "iron");
 
-        registerNodeSet("gold", Blocks.GOLD_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_gold", Blocks.DEEPSLATE_GOLD_ORE, Blocks.DEEPSLATE);
-        registerNodeSet("nether_gold", Blocks.NETHER_GOLD_ORE, Blocks.NETHERRACK);
+        // Gold nodes - output raw gold
+        registerNodeSet("gold", Blocks.GOLD_ORE, Blocks.STONE, Items.RAW_GOLD, "gold");
+        registerNodeSet("deepslate_gold", Blocks.DEEPSLATE_GOLD_ORE, Blocks.DEEPSLATE, Items.RAW_GOLD, "gold");
+        registerNodeSet("nether_gold", Blocks.NETHER_GOLD_ORE, Blocks.NETHERRACK, Items.RAW_GOLD, "gold");
 
-        registerNodeSet("redstone", Blocks.REDSTONE_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_redstone", Blocks.DEEPSLATE_REDSTONE_ORE, Blocks.DEEPSLATE);
+        // Redstone nodes - output redstone dust
+        registerNodeSet("redstone", Blocks.REDSTONE_ORE, Blocks.STONE, Items.REDSTONE, "redstone");
+        registerNodeSet("deepslate_redstone", Blocks.DEEPSLATE_REDSTONE_ORE, Blocks.DEEPSLATE, Items.REDSTONE, "redstone");
 
-        registerNodeSet("lapis", Blocks.LAPIS_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_lapis", Blocks.DEEPSLATE_LAPIS_ORE, Blocks.DEEPSLATE);
+        // Lapis nodes - output lapis lazuli
+        registerNodeSet("lapis", Blocks.LAPIS_ORE, Blocks.STONE, Items.LAPIS_LAZULI, "lapis");
+        registerNodeSet("deepslate_lapis", Blocks.DEEPSLATE_LAPIS_ORE, Blocks.DEEPSLATE, Items.LAPIS_LAZULI, "lapis");
 
-        registerNodeSet("emerald", Blocks.EMERALD_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_emerald", Blocks.DEEPSLATE_EMERALD_ORE, Blocks.DEEPSLATE);
+        // Emerald nodes - output emerald
+        registerNodeSet("emerald", Blocks.EMERALD_ORE, Blocks.STONE, Items.EMERALD, "emerald");
+        registerNodeSet("deepslate_emerald", Blocks.DEEPSLATE_EMERALD_ORE, Blocks.DEEPSLATE, Items.EMERALD, "emerald");
 
-        registerNodeSet("diamond", Blocks.DIAMOND_ORE, Blocks.STONE);
-        registerNodeSet("deepslate_diamond", Blocks.DEEPSLATE_DIAMOND_ORE, Blocks.DEEPSLATE);
+        // Diamond nodes - output diamond
+        registerNodeSet("diamond", Blocks.DIAMOND_ORE, Blocks.STONE, Items.DIAMOND, "diamond");
+        registerNodeSet("deepslate_diamond", Blocks.DEEPSLATE_DIAMOND_ORE, Blocks.DEEPSLATE, Items.DIAMOND, "diamond");
 
-        registerNodeSet("nether_quartz", Blocks.NETHER_QUARTZ_ORE, Blocks.NETHERRACK);
-        registerNodeSet("ancient_debris", Blocks.ANCIENT_DEBRIS, Blocks.NETHERRACK);
+        // Nether Quartz nodes - output quartz
+        registerNodeSet("nether_quartz", Blocks.NETHER_QUARTZ_ORE, Blocks.NETHERRACK, Items.QUARTZ, "quartz");
+
+        // Ancient Debris nodes - output netherite scrap
+        registerNodeSet("ancient_debris", Blocks.ANCIENT_DEBRIS, Blocks.NETHERRACK, Items.NETHERITE_SCRAP, "ancient_debris");
     }
 
     // --- Block Entity Registration ---
-    // We define this AFTER the static block so REGISTERED_NODES is full.
-    // .get() on DeferredBlock returns the actual Block instance during registry phase.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ResourceNodeBlockEntity>> RESOURCE_NODE_BE =
             BLOCK_ENTITIES.register("resource_node_be", () ->
                     BlockEntityType.Builder.of(
@@ -110,26 +127,60 @@ public class ResourceNodes {
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);
         modEventBus.addListener(ResourceNodesKeys::registerKeys);
+
+        // Link deferred blocks to categories after registration
+        modEventBus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) -> {
+            event.enqueueWork(() -> {
+                for (CategoryRegistration reg : PENDING_CATEGORY_REGISTRATIONS) {
+                    ResourceNodeData data = ResourceNodeData.getByCategory(reg.category);
+                    if (data != null) {
+                        data.addNode(reg.block.get());
+                    }
+                }
+                PENDING_CATEGORY_REGISTRATIONS.clear();
+            });
+        });
     }
 
     // --- Helper Methods ---
 
-    private static void registerNodeSet(String baseName, Block originalOre, Block baseBlock) {
+    /**
+     * Register a complete set of nodes (all tiers) with their output item
+     * @param baseName The base name for the nodes (e.g. "iron", "deepslate_iron")
+     * @param originalOre The original ore block to copy properties from
+     * @param baseBlock The base block type (stone, deepslate, netherrack)
+     * @param outputItem The item this node produces (e.g. RAW_IRON, COAL, DIAMOND)
+     * @param categoryName The category to group under (e.g. "iron" for both iron and deepslate_iron)
+     */
+    private static void registerNodeSet(String baseName, Block originalOre, Block baseBlock, Item outputItem, String categoryName) {
+        // Get or create the category data for this node set
+        ResourceNodeData categoryData = ResourceNodeData.getByCategory(categoryName);
+        if (categoryData == null) {
+            categoryData = ResourceNodeData.register(
+                    categoryName,
+                    outputItem,
+                    new ItemStack(outputItem)
+            );
+        }
+
+        // Register all tiers for this node set
         for (ResourceNodeTier tier : ResourceNodeTier.values()) {
             String regName = "node_" + baseName + "_" + tier.getSerializedName();
-            registerNode(regName, originalOre, baseBlock, tier);
+            DeferredBlock<ResourceNodeBlock> registeredBlock = registerNode(regName, originalOre, baseBlock, tier);
+
+            // Store the category-block link for later resolution
+            PENDING_CATEGORY_REGISTRATIONS.add(new CategoryRegistration(categoryName, registeredBlock));
         }
     }
 
-    private static void registerNode(String name, Block originalOre, Block baseBlock, ResourceNodeTier tier) {
+    private static DeferredBlock<ResourceNodeBlock> registerNode(String name, Block originalOre, Block baseBlock, ResourceNodeTier tier) {
         // Create the Block Supplier
         Supplier<ResourceNodeBlock> blockSupplier = () -> new ResourceNodeBlock(
                 originalOre,
                 baseBlock,
                 tier,
-                // In 1.21, we use ofFullCopy to copy settings
                 BlockBehaviour.Properties.ofFullCopy(originalOre)
-                        .lightLevel(state -> 0) // Override light level
+                        .lightLevel(state -> 0)
         );
 
         // Register Block
@@ -140,5 +191,7 @@ public class ResourceNodes {
 
         // Add to our list for BE and DataGen
         REGISTERED_NODES.add(registeredBlock);
+
+        return registeredBlock;
     }
 }

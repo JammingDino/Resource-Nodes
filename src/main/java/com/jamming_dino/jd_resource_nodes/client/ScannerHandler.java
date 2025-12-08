@@ -1,7 +1,9 @@
 package com.jamming_dino.jd_resource_nodes.client;
 
+import com.jamming_dino.jd_resource_nodes.ResourceNodeData;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -10,6 +12,8 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -20,11 +24,11 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 @EventBusSubscriber(modid = ResourceNodes.MODID, value = Dist.CLIENT)
@@ -37,9 +41,54 @@ public class ScannerHandler {
 
     private static final List<ScanResult> activePings = new ArrayList<>();
     private static int scanTickCounter = 0; // Master clock for the current scan
+    private static boolean isRadialMenuOpen = false; // Track if radial menu is open
+    private static RadialSelectionScreen radialScreen = null;
 
-    // scanDistance: Distance from origin when scan started (for Wave timing)
-    private record ScanResult(BlockPos pos, Component name, int color, double scanDistance) {}
+    // Changed from Record to Class so we can modify 'playedSound'
+    private static class ScanResult {
+        final BlockPos pos;
+        final Component name;
+        final int color;
+        final double scanDistance;
+        boolean playedSound = false; // Tracks if we have "dinged" yet
+
+        public ScanResult(BlockPos pos, Component name, int color, double scanDistance) {
+            this.pos = pos;
+            this.name = name;
+            this.color = color;
+            this.scanDistance = scanDistance;
+        }
+    }
+
+    @SubscribeEvent
+    public static void onKeyInput(InputEvent.Key event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+
+        // Check if this is our keybind
+        if (event.getKey() == ResourceNodesKeys.PING_KEY.getKey().getValue()) {
+            // GLFW.GLFW_PRESS = 1, GLFW.GLFW_RELEASE = 0
+            if (event.getAction() == 1) { // Key pressed
+                if (!isRadialMenuOpen) {
+                    openRadialMenu(mc);
+                    isRadialMenuOpen = true;
+                }
+            } else if (event.getAction() == 0) { // Key released
+                if (isRadialMenuOpen && radialScreen != null) {
+                    List<Block> selectedBlocks = radialScreen.getSelectedBlocks();
+                    String categoryName = radialScreen.getSelectedCategoryName();
+                    mc.setScreen(null);
+                    radialScreen = null;
+                    isRadialMenuOpen = false;
+
+                    // Only perform scan if something was selected
+                    if (!selectedBlocks.isEmpty()) {
+                        performScan(mc.player, mc.level, null, selectedBlocks, categoryName);
+                    }
+                }
+            }
+        }
+    }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -50,28 +99,58 @@ public class ScannerHandler {
         if (!activePings.isEmpty()) {
             scanTickCounter++;
 
-            // Cleanup: Remove nodes that have exceeded their lifetime
+            // 1. Cleanup: Remove nodes that have exceeded their lifetime
             activePings.removeIf(ping -> {
                 double ticksToReach = ping.scanDistance / SCAN_SPEED;
                 double age = scanTickCounter - ticksToReach;
                 return age > PING_LIFETIME;
             });
+
+            // 2. Audio: Play sound if the wave just hit the node
+            for (ScanResult ping : activePings) {
+                double ticksToReach = ping.scanDistance / SCAN_SPEED;
+                double age = scanTickCounter - ticksToReach;
+
+                // If wave has reached the node (age > 0) AND we haven't played the sound yet
+                if (age >= 0 && !ping.playedSound) {
+                    float pitch = 2.0f; // High pitch "Ding"
+
+                    // Play sound at the player's position
+                    mc.player.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 0.5f, pitch);
+
+                    ping.playedSound = true;
+                }
+            }
         }
 
-        while (ResourceNodesKeys.PING_KEY.consumeClick()) {
-            performScan(mc.player, mc.level);
-        }
+        // Handle radial menu - no longer needed here, handled in onKeyInput
     }
 
-    private static void performScan(Player player, net.minecraft.world.level.Level level) {
+    private static void openRadialMenu(Minecraft mc) {
+        List<ResourceNodeData> categories = ResourceNodeData.getAllCategories();
+
+        if (categories.isEmpty()) {
+            mc.player.displayClientMessage(Component.literal("No resource nodes registered!"), true);
+            return;
+        }
+
+        radialScreen = new RadialSelectionScreen();
+        radialScreen.setCategories(categories);
+        mc.setScreen(radialScreen);
+    }
+
+    private static void performScan(Player player, net.minecraft.world.level.Level level, Block filterBlock) {
+        performScan(player, level, filterBlock, null, null);
+    }
+
+    private static void performScan(Player player, net.minecraft.world.level.Level level, Block filterBlock, List<Block> filterBlocks, String categoryName) {
         activePings.clear();
         scanTickCounter = 0;
 
-        ItemStack offhand = player.getOffhandItem();
-        Block filterBlock = null;
-        if (offhand.getItem() instanceof BlockItem bi && bi.getBlock() instanceof ResourceNodeBlock) {
-            filterBlock = bi.getBlock();
-            player.displayClientMessage(Component.literal("Scanning for: " + offhand.getHoverName().getString()), true);
+        if (filterBlocks != null && !filterBlocks.isEmpty() && categoryName != null) {
+            player.displayClientMessage(Component.literal("Scanning for: " + categoryName), true);
+        } else if (filterBlock != null) {
+            player.displayClientMessage(Component.literal("Scanning for: " + filterBlock.getName().getString()), true);
         } else {
             player.displayClientMessage(Component.literal("Scanning for all Nodes..."), true);
         }
@@ -87,7 +166,17 @@ public class ScannerHandler {
                     BlockState state = level.getBlockState(targetPos);
 
                     if (state.getBlock() instanceof ResourceNodeBlock) {
-                        if (filterBlock != null && filterBlock != state.getBlock()) continue;
+                        // Check if this block matches our filter
+                        boolean matches = false;
+                        if (filterBlocks != null && !filterBlocks.isEmpty()) {
+                            matches = filterBlocks.contains(state.getBlock());
+                        } else if (filterBlock != null) {
+                            matches = (filterBlock == state.getBlock());
+                        } else {
+                            matches = true; // No filter, scan all
+                        }
+
+                        if (!matches) continue;
 
                         int color = 0xFFFFFF;
                         String name = state.getBlock().getName().getString();
@@ -105,6 +194,8 @@ public class ScannerHandler {
         if (foundCount == 0) {
             player.displayClientMessage(Component.literal("No nodes found nearby."), true);
         } else {
+            // Play a start sound (optional, but nice feedback)
+            player.playSound(SoundEvents.BEACON_ACTIVATE, 0.5f, 2.0f);
             player.displayClientMessage(Component.literal("Found " + foundCount + " nodes!"), true);
         }
     }
@@ -118,13 +209,10 @@ public class ScannerHandler {
         PoseStack poseStack = event.getPoseStack();
         Vec3 cameraPos = event.getCamera().getPosition();
 
-        // SORTING FIX:
-        // We must sort based on the distance to the *current camera*, not the scan origin.
-        // This ensures transparency renders correctly as you move around.
+        // Sort for transparency (Painter's Algorithm)
         activePings.sort((a, b) -> {
             double distA = a.pos.distToCenterSqr(cameraPos);
             double distB = b.pos.distToCenterSqr(cameraPos);
-            // Sort Descending (Far -> Close) for painter's algorithm
             return Double.compare(distB, distA);
         });
 
@@ -133,42 +221,68 @@ public class ScannerHandler {
         RenderSystem.depthMask(false);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.lineWidth(5.0f);
 
         Tesselator tesselator = Tesselator.getInstance();
-
-        // --- PHASE 1: DRAW BOXES ---
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
+        // =============================================================
+        // PHASE 1: BEAMS (QUADS)
+        // =============================================================
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
         for (ScanResult ping : activePings) {
             float alpha = calculateAlpha(ping);
             if (alpha <= 0.1) continue;
 
-            renderPingBox(poseStack, tesselator, cameraPos, ping, alpha);
+            renderPingBeam(poseStack, buffer, cameraPos, ping, alpha);
         }
 
-        // --- PHASE 2: DRAW TEXT ---
+        MeshData beamMesh = buffer.build();
+        if (beamMesh != null) {
+            BufferUploader.drawWithShader(beamMesh);
+        }
+
+        // =============================================================
+        // PHASE 2: BOXES (LINES)
+        // =============================================================
+        RenderSystem.lineWidth(5.0f);
+        buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
+
+        for (ScanResult ping : activePings) {
+            float alpha = calculateAlpha(ping);
+            if (alpha <= 0.1) continue;
+
+            renderPingBox(poseStack, buffer, cameraPos, ping, alpha);
+        }
+
+        MeshData boxMesh = buffer.build();
+        if (boxMesh != null) {
+            BufferUploader.drawWithShader(boxMesh);
+        }
+
+        // =============================================================
+        // PHASE 3: TEXT
+        // =============================================================
         RenderSystem.setShader(() -> null);
-        MultiBufferSource.BufferSource buffer = MultiBufferSource.immediate(new ByteBufferBuilder(1536));
+        RenderSystem.lineWidth(1.0f);
+
+        MultiBufferSource.BufferSource textBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(1536));
 
         for (ScanResult ping : activePings) {
             float alpha = calculateAlpha(ping);
             if (alpha <= 0.1) continue;
 
-            renderPingText(poseStack, buffer, mc, cameraPos, ping, alpha);
+            renderPingText(poseStack, textBuffer, mc, cameraPos, ping, alpha);
         }
 
-        buffer.endBatch();
+        textBuffer.endBatch();
 
         // --- RESTORE STATE ---
-        RenderSystem.lineWidth(1.0f);
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
     }
 
     private static float calculateAlpha(ScanResult ping) {
-        // Uses the static 'scanDistance' so the wave logic remains consistent
-        // regardless of where the player moves after scanning.
         double ticksToReach = ping.scanDistance / SCAN_SPEED;
         double age = scanTickCounter - ticksToReach;
 
@@ -182,7 +296,56 @@ public class ScannerHandler {
         return 1.0f;
     }
 
-    private static void renderPingBox(PoseStack poseStack, Tesselator tesselator, Vec3 cameraPos, ScanResult ping, float alpha) {
+    private static void renderPingBeam(PoseStack poseStack, BufferBuilder buffer, Vec3 cameraPos, ScanResult ping, float alpha) {
+        BlockPos pos = ping.pos;
+        double dx = pos.getX() - cameraPos.x;
+        double dy = pos.getY() - cameraPos.y;
+        double dz = pos.getZ() - cameraPos.z;
+
+        poseStack.pushPose();
+        poseStack.translate(dx, dy, dz);
+        Matrix4f matrix = poseStack.last().pose();
+
+        float height = 320.0f;
+        float width = 0.2f;
+
+        float min = 0.5f - width;
+        float max = 0.5f + width;
+
+        int r = 255;
+        int g = 255;
+        int b = 255;
+        int alphaBottom = (int) (alpha * 100);
+        int alphaTop = 0;
+
+        // North
+        vertex(buffer, matrix, min, 0, min, r, g, b, alphaBottom);
+        vertex(buffer, matrix, min, height, min, r, g, b, alphaTop);
+        vertex(buffer, matrix, max, height, min, r, g, b, alphaTop);
+        vertex(buffer, matrix, max, 0, min, r, g, b, alphaBottom);
+
+        // South
+        vertex(buffer, matrix, min, 0, max, r, g, b, alphaBottom);
+        vertex(buffer, matrix, max, 0, max, r, g, b, alphaBottom);
+        vertex(buffer, matrix, max, height, max, r, g, b, alphaTop);
+        vertex(buffer, matrix, min, height, max, r, g, b, alphaTop);
+
+        // East
+        vertex(buffer, matrix, max, 0, min, r, g, b, alphaBottom);
+        vertex(buffer, matrix, max, height, min, r, g, b, alphaTop);
+        vertex(buffer, matrix, max, height, max, r, g, b, alphaTop);
+        vertex(buffer, matrix, max, 0, max, r, g, b, alphaBottom);
+
+        // West
+        vertex(buffer, matrix, min, 0, min, r, g, b, alphaBottom);
+        vertex(buffer, matrix, min, 0, max, r, g, b, alphaBottom);
+        vertex(buffer, matrix, min, height, max, r, g, b, alphaTop);
+        vertex(buffer, matrix, min, height, min, r, g, b, alphaTop);
+
+        poseStack.popPose();
+    }
+
+    private static void renderPingBox(PoseStack poseStack, BufferBuilder buffer, Vec3 cameraPos, ScanResult ping, float alpha) {
         BlockPos pos = ping.pos;
         double dx = pos.getX() - cameraPos.x;
         double dy = pos.getY() - cameraPos.y;
@@ -197,31 +360,27 @@ public class ScannerHandler {
         int b = 255;
         int a = (int)(alpha * 255);
 
-        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
-
         float min = -0.00f;
         float max = 1.00f;
 
-        // Box Vertices
-        // Bottom Square
+        // Bottom
         vertex(buffer, matrix, min, min, min, r, g, b, a); vertex(buffer, matrix, max, min, min, r, g, b, a);
         vertex(buffer, matrix, max, min, min, r, g, b, a); vertex(buffer, matrix, max, min, max, r, g, b, a);
         vertex(buffer, matrix, max, min, max, r, g, b, a); vertex(buffer, matrix, min, min, max, r, g, b, a);
         vertex(buffer, matrix, min, min, max, r, g, b, a); vertex(buffer, matrix, min, min, min, r, g, b, a);
 
-        // Top Square
+        // Top
         vertex(buffer, matrix, min, max, min, r, g, b, a); vertex(buffer, matrix, max, max, min, r, g, b, a);
         vertex(buffer, matrix, max, max, min, r, g, b, a); vertex(buffer, matrix, max, max, max, r, g, b, a);
         vertex(buffer, matrix, max, max, max, r, g, b, a); vertex(buffer, matrix, min, max, max, r, g, b, a);
         vertex(buffer, matrix, min, max, max, r, g, b, a); vertex(buffer, matrix, min, max, min, r, g, b, a);
 
-        // Vertical Pillars
+        // Pillars
         vertex(buffer, matrix, min, min, min, r, g, b, a); vertex(buffer, matrix, min, max, min, r, g, b, a);
         vertex(buffer, matrix, max, min, min, r, g, b, a); vertex(buffer, matrix, max, max, min, r, g, b, a);
         vertex(buffer, matrix, max, min, max, r, g, b, a); vertex(buffer, matrix, max, max, max, r, g, b, a);
         vertex(buffer, matrix, min, min, max, r, g, b, a); vertex(buffer, matrix, min, max, max, r, g, b, a);
 
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
         poseStack.popPose();
     }
 
@@ -235,8 +394,6 @@ public class ScannerHandler {
         double dy = pos.getY() - cameraPos.y;
         double dz = pos.getZ() - cameraPos.z;
 
-        // CALCULATE CURRENT DISTANCE (Every Frame)
-        // This ensures the scale and text label update as you move.
         double currentDistSq = pos.distToCenterSqr(cameraPos);
         double currentDistance = Math.sqrt(currentDistSq);
 
@@ -244,12 +401,10 @@ public class ScannerHandler {
         poseStack.translate(dx + 0.5, dy + 1.5, dz + 0.5);
         poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
 
-        // DYNAMIC SCALE (Using Current Distance)
         float baseScale = 0.025F;
         float constantScale = baseScale * (float)Math.max(currentDistance, 4.0) / 4.0f;
         poseStack.scale(constantScale, -constantScale, constantScale);
 
-        // TEXT UPDATE (Using Current Distance)
         Component text = Component.literal(ping.name.getString() + " (" + (int)currentDistance + "m)");
         Matrix4f matrix4f = poseStack.last().pose();
 
