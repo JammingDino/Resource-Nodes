@@ -3,8 +3,11 @@ package com.jamming_dino.jd_resource_nodes;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
+import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
@@ -13,11 +16,16 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.attachment.IAttachmentSerializer;
+import net.neoforged.neoforge.attachment.IAttachmentHolder; // ADDED THIS IMPORT
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import com.jamming_dino.jd_resource_nodes.datagen.ResourceNodesDataGen;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -34,6 +42,7 @@ public class ResourceNodes {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+    public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MODID);
 
     // --- Storage for DataGen and Logic ---
     public static final List<DeferredBlock<ResourceNodeBlock>> REGISTERED_NODES = new ArrayList<>();
@@ -93,6 +102,26 @@ public class ResourceNodes {
         registerNodeSet("ancient_debris", Blocks.ANCIENT_DEBRIS, Blocks.NETHERRACK, Items.NETHERITE_SCRAP, "ancient_debris");
     }
 
+    // --- Attachment Registration ---
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<ScannerUnlockData>> SCANNER_DATA = ATTACHMENT_TYPES.register(
+            "scanner_data", () -> AttachmentType.builder(ScannerUnlockData::new)
+                    .serialize(new IAttachmentSerializer<CompoundTag, ScannerUnlockData>() {
+                        // FIXED: Added IAttachmentHolder holder parameter
+                        @Override
+                        public ScannerUnlockData read(IAttachmentHolder holder, CompoundTag tag, HolderLookup.Provider provider) {
+                            ScannerUnlockData data = new ScannerUnlockData();
+                            data.deserializeNBT(provider, tag);
+                            return data;
+                        }
+
+                        @Override
+                        public @Nullable CompoundTag write(ScannerUnlockData data, HolderLookup.Provider provider) {
+                            return data.serializeNBT(provider);
+                        }
+                    })
+                    .build()
+    );
+
     // --- Block Entity Registration ---
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ResourceNodeBlockEntity>> RESOURCE_NODE_BE =
             BLOCK_ENTITIES.register("resource_node_be", () ->
@@ -123,10 +152,14 @@ public class ResourceNodes {
         ITEMS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+        ATTACHMENT_TYPES.register(modEventBus);
 
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);
         modEventBus.addListener(ResourceNodesKeys::registerKeys);
+
+        // Register Packet Handler
+        modEventBus.addListener(com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler::register);
 
         // Link deferred blocks to categories after registration
         modEventBus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) -> {
@@ -146,11 +179,6 @@ public class ResourceNodes {
 
     /**
      * Register a complete set of nodes (all tiers) with their output item
-     * @param baseName The base name for the nodes (e.g. "iron", "deepslate_iron")
-     * @param originalOre The original ore block to copy properties from
-     * @param baseBlock The base block type (stone, deepslate, netherrack)
-     * @param outputItem The item this node produces (e.g. RAW_IRON, COAL, DIAMOND)
-     * @param categoryName The category to group under (e.g. "iron" for both iron and deepslate_iron)
      */
     private static void registerNodeSet(String baseName, Block originalOre, Block baseBlock, Item outputItem, String categoryName) {
         // Get or create the category data for this node set

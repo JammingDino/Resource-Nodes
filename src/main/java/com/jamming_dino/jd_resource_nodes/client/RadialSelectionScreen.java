@@ -152,7 +152,7 @@ public class RadialSelectionScreen extends Screen {
     private void drawCircle(GuiGraphics graphics, int centerX, int centerY, int radius, int color) {
         ResourceLocation CIRCLE_TEXTURE = ResourceLocation.fromNamespaceAndPath(
                 "jd_resource_nodes",
-                "textures/gui/circle_large.png"
+                "textures/gui/circle.png"
         );
 
         float alpha = ((color >> 24) & 0xFF) / 255f;
