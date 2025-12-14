@@ -10,6 +10,7 @@
 *   **Deepslate & Nether Variants:** Automatically adapts textures and base blocks (e.g., Deepslate Ores turn into Deepslate).
 *   **Three Tiers:** Every node comes in **Impure**, **Normal**, and **Pure** variants, determining how fast they regenerate.
 *   **Visual Indicators:** Nodes feature custom overlaid borders to easily distinguish their tier.
+*   **Unlockable Scanner:** A built-in visual scanner with a command-based progression system.
 *   **Automation Ready:** Fully compatible with quarries and mods like **Create**.
 
 ## How It Works
@@ -24,6 +25,17 @@ In Survival Mode, Resource Nodes are designed to be **permanent infrastructure**
 When you mine a Resource Node, it drops its standard loot (e.g., Raw Iron) and turns into its base block (e.g., Stone).
 *   **Unbreakable State:** While regenerating (Stone state), the block has the hardness of Bedrock (`-1.0f`).
 *   **Automation:** Create Drills and other machines will automatically stop mining when the node hits this state and resume immediately once it turns back into Ore.
+
+### Resource Scanner & Progression
+The mod includes a visual scanner to help locate nodes through walls.
+*   **Usage:** Press and hold **`V`** to open the radial menu, select a resource, and release to scan.
+*   **Progression:** By default, the scanner is **locked**. Players must unlock the ability to scan for specific resources via commands. This is designed for modpack makers to gate resources behind quests or milestones.
+
+**Scanner Commands (Requires OP):**
+*   `/scanner unlock <resource>` - Unlocks a specific node type (e.g., `/scanner unlock iron`).
+*   `/scanner unlock all` - Instantly unlocks every registered resource node.
+*   `/scanner lock <resource>` - Removes the ability to scan for a specific resource.
+*   `/scanner lock all` - Resets the scanner, locking all nodes.
 
 ### Admin Overrides
 If you need to mass-remove nodes using WorldEdit or Commands (since they resist being set to Air), they have a weakness to **Barriers**.
