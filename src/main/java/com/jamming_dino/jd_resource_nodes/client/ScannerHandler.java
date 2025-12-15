@@ -69,6 +69,9 @@ public class ScannerHandler {
             // KEY PRESSED
             if (event.getAction() == 1) {
                 if (!isRadialMenuOpen) {
+                    // Prevent opening if a screen is already open (e.g. Chat, Inventory)
+                    if (mc.screen != null) return;
+
                     // Try to open menu. If it returns false (no unlocks), we DO NOT set isRadialMenuOpen to true.
                     boolean opened = openRadialMenu(mc);
                     if (opened) {
