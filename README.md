@@ -15,6 +15,8 @@
 
 ## How It Works
 
+**_Theses node do not spawn naturally, and are currently designed for map oriented play. A recipie could also be added via craft tweaker for use within modpacks._**
+
 ### Permanent Infrastructure
 In Survival Mode, Resource Nodes are designed to be **permanent infrastructure**.
 *   **Immovable:** Nodes cannot be moved by Pistons or picked up (even with Silk Touch).
