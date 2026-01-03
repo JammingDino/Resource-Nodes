@@ -1,7 +1,6 @@
 # JD Resource Nodes
 
-![NeoForge](https://img.shields.io/badge/Loader-NeoForge-orange) ![MC Version](https://img.shields.io/badge/Minecraft-1.21.1-green) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-
+[![NeoForge](https://img.shields.io/badge/Loader-NeoForge-orange)](https://neoforged.net/) [![MC Version](https://img.shields.io/badge/Minecraft-1.21.1-green)](https://minecraft.wiki/w/Java_Edition_1.21.1) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0) [![Modrinth Downloads](https://img.shields.io/modrinth/dt/resource-nodes?color=00AF5C&logo=modrinth&label=Downloads)](https://modrinth.com/mod/resource-nodes) [![CurseForge Downloads](https://img.shields.io/curseforge/dt/1419540?logo=curseforge&label=CurseForge%20Downloads)](https://www.curseforge.com/minecraft/mc-mods/resource-nodes)
 
 **JD Resource Nodes** adds renewable versions of every vanilla ore to Minecraft. Instead of disappearing when mined, these nodes deplete into their base block (Stone, Deepslate, or Netherrack) and regenerate over time, making them perfect for static mining setups and automation.
 
