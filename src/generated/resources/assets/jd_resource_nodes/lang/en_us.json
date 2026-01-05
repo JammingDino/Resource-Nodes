@@ -60,6 +60,7 @@
   "config.jd_resource_nodes.normal_ticks": "Normal Regeneration Ticks",
   "config.jd_resource_nodes.pure_ticks": "Pure Regeneration Ticks",
   "config.jd_resource_nodes.regeneration": "Regeneration Settings",
+  "config.jd_resource_nodes.scanner_radius": "Scanner Radius",
   "config.jd_resource_nodes.text_enabled": "Pinger Text",
   "config.jd_resource_nodes.text_scale": "Text Scale",
   "config.jd_resource_nodes.title": "Resource Nodes Config",

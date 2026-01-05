@@ -21,6 +21,7 @@ public class ResourceNodesLangProvider extends LanguageProvider {
         add("config.jd_resource_nodes.title", "Resource Nodes Config");
         add("config.jd_resource_nodes.text_enabled", "Pinger Text");
         add("config.jd_resource_nodes.text_scale", "Text Scale");
+        add("config.jd_resource_nodes.scanner_radius", "Scanner Radius"); // Added
         add("config.jd_resource_nodes.regeneration", "Regeneration Settings");
         add("config.jd_resource_nodes.impure_ticks", "Impure Regeneration Ticks");
         add("config.jd_resource_nodes.normal_ticks", "Normal Regeneration Ticks");

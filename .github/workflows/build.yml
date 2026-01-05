@@ -38,13 +38,19 @@ jobs:
         run: |
           echo "final_version=${{ steps.read_properties.outputs.base_version }}.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-      # 3. Build the Jar
-      # We pass -Pmod_version to override the file value with our new unique version
-      # We pass -x test to skip the empty test error you were seeing
-      - name: Build with Gradle
-        run: ./gradlew build -x test -Pmod_version=${{ steps.set_version.outputs.final_version }}
+      # 3. Update the gradle.properties file directly
+      # This replaces the line starting with 'mod_version=' with the new version
+      - name: Update gradle.properties
+        run: |
+          sed -i "s/^mod_version=.*/mod_version=${{ steps.set_version.outputs.final_version }}/" gradle.properties
+          echo "Updated gradle.properties to version: ${{ steps.set_version.outputs.final_version }}"
 
-      # 4. Create GitHub Release
+      # 4. Build the Jar
+      # We no longer need -Pmod_version because the file itself is updated
+      - name: Build with Gradle
+        run: ./gradlew build -x test
+
+      # 5. Create GitHub Release
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:

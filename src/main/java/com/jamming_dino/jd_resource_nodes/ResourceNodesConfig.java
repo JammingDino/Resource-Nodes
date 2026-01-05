@@ -24,6 +24,9 @@ public class ResourceNodesConfig {
     public boolean text_enabled = true;
     public float text_scale = 1.0f;
 
+    // Scanner settings
+    public int scanner_radius = 128;
+
     public static int getImpureTicks() {
         return INSTANCE.impure_ticks;
     }
@@ -42,6 +45,10 @@ public class ResourceNodesConfig {
 
     public static float getTextScale() {
         return INSTANCE.text_scale;
+    }
+
+    public static int getScannerRadius() {
+        return INSTANCE.scanner_radius;
     }
 
     public static void setImpureTicks(int ticks) {
@@ -69,6 +76,11 @@ public class ResourceNodesConfig {
         save();
     }
 
+    public static void setScannerRadius(int radius) {
+        INSTANCE.scanner_radius = Math.max(16, Math.min(512, radius)); // Clamp between 16 (1 chunk) and 512 (32 chunks)
+        save();
+    }
+
     public static void load() {
         if (CONFIG_FILE.exists()) {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
@@ -93,8 +105,10 @@ public class ResourceNodesConfig {
                     if (INSTANCE.pure_ticks < 1 || INSTANCE.pure_ticks > 72000) {
                         INSTANCE.pure_ticks = 200;
                     }
+                    if (INSTANCE.scanner_radius < 16 || INSTANCE.scanner_radius > 512) {
+                        INSTANCE.scanner_radius = 128;
+                    }
                     // Note: text_enabled defaults to true in the class definition
-                    // If the JSON doesn't have this field, Java will use the default value
                 }
                 save(); // Save to ensure file is up to date with any corrections
             } catch (IOException e) {
