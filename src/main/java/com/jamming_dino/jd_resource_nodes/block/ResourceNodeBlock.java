@@ -4,6 +4,7 @@ import com.jamming_dino.jd_resource_nodes.ResourceNodeTier;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -23,6 +24,9 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -183,6 +187,31 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
     // --- SHARED HELPER: Smart Drops ---
     private void spawnSmartDrops(Level level, BlockPos pos, List<ItemStack> drops) {
         BlockPos belowPos = pos.below();
+
+        // --- NEW: INVENTORY AUTO-INSERTION LOGIC ---
+
+        // Check for an item handler (Inventory/Chests/Barrels/Hoppers/Pipes)
+        // We use Direction.UP because we are inserting into the TOP face of the block below us.
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, belowPos, Direction.UP);
+
+        if (handler != null) {
+            // Iterate through the drops and attempt to insert them
+            for (int i = 0; i < drops.size(); i++) {
+                ItemStack stack = drops.get(i);
+                if (stack.isEmpty()) continue;
+
+                // insertItemStacked handles finding slots and stacking. 'false' means actually execute the action.
+                // It returns the remainder (what didn't fit).
+                ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, stack, false);
+
+                // Update the list with the remainder (so the entity spawn logic below only handles what didn't fit)
+                drops.set(i, remainder);
+            }
+        }
+
+        // --- END AUTO-INSERTION LOGIC ---
+
+        // Proceed to spawn entities for anything that remains (was not inserted or no inventory found)
         BlockPos abovePos = pos.above();
 
         // Check 1: Is the block Air?
@@ -204,6 +233,8 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
         }
 
         for (ItemStack stack : drops) {
+            if (stack.isEmpty()) continue; // Skip if empty (fully inserted into inventory)
+
             ItemEntity itemEntity = new ItemEntity(level, pos.getX() + 0.5, spawnY, pos.getZ() + 0.5, stack);
 
             // If we found a free spot, kill velocity so it doesn't drift

@@ -4,6 +4,7 @@ import com.jamming_dino.jd_resource_nodes.ResourceNodeData;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.ResourceNodesConfig;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
+import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -15,8 +16,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,21 +33,25 @@ import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @EventBusSubscriber(modid = ResourceNodes.MODID, value = Dist.CLIENT)
 public class ScannerHandler {
 
-    private static final int SCAN_RADIUS = 128;
+    // REMOVED: private static final int SCAN_RADIUS = 128;
     private static final float SCAN_SPEED = 2f;
     private static final int PING_LIFETIME = 200;
     private static final int FADE_TICKS = 40;
 
+    // List to store active scan results
     private static final List<ScanResult> activePings = new ArrayList<>();
     private static int scanTickCounter = 0;
 
     // --- STATE VARIABLES ---
     private static boolean isRadialMenuOpen = false;
     private static RadialSelectionScreen radialScreen = null;
+    private static boolean isScanning = false;
 
     private static class ScanResult {
         final BlockPos pos;
@@ -65,22 +74,14 @@ public class ScannerHandler {
         if (mc.player == null || mc.level == null) return;
 
         if (event.getKey() == ResourceNodesKeys.PING_KEY.getKey().getValue()) {
-
-            // KEY PRESSED
-            if (event.getAction() == 1) {
+            if (event.getAction() == 1) { // Pressed
                 if (!isRadialMenuOpen) {
-                    // Prevent opening if a screen is already open (e.g. Chat, Inventory)
                     if (mc.screen != null) return;
-
-                    // Try to open menu. If it returns false (no unlocks), we DO NOT set isRadialMenuOpen to true.
-                    boolean opened = openRadialMenu(mc);
-                    if (opened) {
+                    if (openRadialMenu(mc)) {
                         isRadialMenuOpen = true;
                     }
                 }
-            }
-            // KEY RELEASED
-            else if (event.getAction() == 0) {
+            } else if (event.getAction() == 0) { // Released
                 if (isRadialMenuOpen) {
                     closeRadialMenuAndScan(mc);
                     isRadialMenuOpen = false;
@@ -89,15 +90,13 @@ public class ScannerHandler {
         }
     }
 
-    // Returns TRUE if the menu successfully opened, FALSE if it was blocked (empty unlocks)
     private static boolean openRadialMenu(Minecraft mc) {
         if (mc.player == null) return false;
 
         ScannerUnlockData data = mc.player.getData(ResourceNodes.SCANNER_DATA);
         List<ResourceNodeData> allCategories = ResourceNodeData.getAllCategories();
-
-        // Filter based on unlocked capability
         List<ResourceNodeData> unlockedCategories = new ArrayList<>();
+
         for (ResourceNodeData cat : allCategories) {
             if (data.isUnlocked(cat.getCategory())) {
                 unlockedCategories.add(cat);
@@ -106,35 +105,128 @@ public class ScannerHandler {
 
         if (unlockedCategories.isEmpty()) {
             mc.player.displayClientMessage(Component.literal("No scanners unlocked! Use /scanner unlock <resource>"), true);
-            return false; // Failed to open
+            return false;
         }
 
         radialScreen = new RadialSelectionScreen();
         radialScreen.setCategories(unlockedCategories);
         mc.setScreen(radialScreen);
-        return true; // Successfully opened
+        return true;
     }
 
     private static void closeRadialMenuAndScan(Minecraft mc) {
-        // Only trigger scan if the current screen is actually OUR screen.
-        // This prevents scanning if the player closed the menu with ESC earlier.
         if (mc.screen == radialScreen && radialScreen != null) {
             List<Block> selectedBlocks = radialScreen.getSelectedBlocks();
             String categoryName = radialScreen.getSelectedCategoryName();
-
-            mc.setScreen(null); // Close the GUI
+            mc.setScreen(null);
 
             if (!selectedBlocks.isEmpty()) {
                 performScan(mc.player, mc.level, null, selectedBlocks, categoryName);
             }
         } else {
-            // Safety cleanup
             mc.setScreen(null);
         }
         radialScreen = null;
     }
 
-    // --- Tick, Scan Logic, and Rendering (Unchanged) ---
+    // --- OPTIMIZED ENTITY-BASED SCANNING LOGIC ---
+
+    private static class RawNodeData {
+        final BlockPos pos;
+        final Block block;
+
+        RawNodeData(BlockPos pos, Block block) {
+            this.pos = pos;
+            this.block = block;
+        }
+    }
+
+    private static void performScan(Player player, Level level, Block filterBlock, List<Block> filterBlocks, String categoryName) {
+        if (isScanning) return;
+        isScanning = true;
+
+        // GET CONFIG RADIUS HERE
+        int scanRadius = ResourceNodesConfig.getScannerRadius();
+
+        // Feedback Message
+        if (filterBlocks != null && !filterBlocks.isEmpty() && categoryName != null) {
+            player.displayClientMessage(Component.literal("Scanning for: " + categoryName + "..."), true);
+        } else if (filterBlock != null) {
+            player.displayClientMessage(Component.literal("Scanning for: " + filterBlock.getName().getString() + "..."), true);
+        } else {
+            player.displayClientMessage(Component.literal("Scanning for all Nodes..."), true);
+        }
+
+        BlockPos playerPos = player.blockPosition();
+        Vec3 playerVec = player.position();
+
+        // 1. Gather Raw Data on Main Thread
+        List<RawNodeData> candidates = new ArrayList<>();
+
+        int chunkRadius = (scanRadius >> 4) + 1;
+        int minChunkX = (playerPos.getX() >> 4) - chunkRadius;
+        int maxChunkX = (playerPos.getX() >> 4) + chunkRadius;
+        int minChunkZ = (playerPos.getZ() >> 4) - chunkRadius;
+        int maxChunkZ = (playerPos.getZ() >> 4) + chunkRadius;
+
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+                if (level.getChunk(cx, cz, ChunkStatus.FULL, false) instanceof LevelChunk chunk) {
+                    Map<BlockPos, BlockEntity> entities = chunk.getBlockEntities();
+                    for (BlockEntity be : entities.values()) {
+                        if (be instanceof ResourceNodeBlockEntity) {
+                            candidates.add(new RawNodeData(be.getBlockPos(), be.getBlockState().getBlock()));
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Process Filters and Distance Asynchronously
+        CompletableFuture.runAsync(() -> {
+            List<ScanResult> results = new ArrayList<>();
+            int foundCount = 0;
+            double radiusSq = scanRadius * scanRadius;
+
+            for (RawNodeData data : candidates) {
+                // Check Filters
+                boolean matches = false;
+                if (filterBlocks != null && !filterBlocks.isEmpty()) {
+                    matches = filterBlocks.contains(data.block);
+                } else if (filterBlock != null) {
+                    matches = (filterBlock == data.block);
+                } else {
+                    matches = true;
+                }
+
+                if (!matches) continue;
+
+                // Check Distance
+                double distSq = data.pos.distToCenterSqr(playerVec);
+                if (distSq > radiusSq) continue;
+
+                double dist = Math.sqrt(distSq);
+                results.add(new ScanResult(data.pos, data.block.getName(), 0xFFFFFF, dist));
+                foundCount++;
+            }
+
+            // 3. Apply Results on Main Thread
+            int finalFoundCount = foundCount;
+            Minecraft.getInstance().execute(() -> {
+                isScanning = false;
+                scanTickCounter = 0;
+                activePings.clear();
+                activePings.addAll(results);
+
+                if (finalFoundCount == 0) {
+                    player.displayClientMessage(Component.literal("No nodes found nearby."), true);
+                } else {
+                    player.playSound(SoundEvents.BEACON_ACTIVATE, 0.5f, 2.0f);
+                    player.displayClientMessage(Component.literal("Found " + finalFoundCount + " nodes!"), true);
+                }
+            });
+        });
+    }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -162,59 +254,6 @@ public class ScannerHandler {
         }
     }
 
-    private static void performScan(Player player, net.minecraft.world.level.Level level, Block filterBlock, List<Block> filterBlocks, String categoryName) {
-        activePings.clear();
-        scanTickCounter = 0;
-
-        if (filterBlocks != null && !filterBlocks.isEmpty() && categoryName != null) {
-            player.displayClientMessage(Component.literal("Scanning for: " + categoryName), true);
-        } else if (filterBlock != null) {
-            player.displayClientMessage(Component.literal("Scanning for: " + filterBlock.getName().getString()), true);
-        } else {
-            player.displayClientMessage(Component.literal("Scanning for all Nodes..."), true);
-        }
-
-        BlockPos playerPos = player.blockPosition();
-        int foundCount = 0;
-        Vec3 pVec = player.position();
-
-        for (int x = -SCAN_RADIUS; x <= SCAN_RADIUS; x++) {
-            for (int y = -32; y <= 32; y++) {
-                for (int z = -SCAN_RADIUS; z <= SCAN_RADIUS; z++) {
-                    BlockPos targetPos = playerPos.offset(x, y, z);
-                    BlockState state = level.getBlockState(targetPos);
-
-                    if (state.getBlock() instanceof ResourceNodeBlock) {
-                        boolean matches = false;
-                        if (filterBlocks != null && !filterBlocks.isEmpty()) {
-                            matches = filterBlocks.contains(state.getBlock());
-                        } else if (filterBlock != null) {
-                            matches = (filterBlock == state.getBlock());
-                        } else {
-                            matches = true;
-                        }
-
-                        if (!matches) continue;
-
-                        int color = 0xFFFFFF;
-                        String name = state.getBlock().getName().getString();
-                        double dist = Math.sqrt(targetPos.distToCenterSqr(pVec));
-
-                        activePings.add(new ScanResult(targetPos, Component.literal(name), color, dist));
-                        foundCount++;
-                    }
-                }
-            }
-        }
-
-        if (foundCount == 0) {
-            player.displayClientMessage(Component.literal("No nodes found nearby."), true);
-        } else {
-            player.playSound(SoundEvents.BEACON_ACTIVATE, 0.5f, 2.0f);
-            player.displayClientMessage(Component.literal("Found " + foundCount + " nodes!"), true);
-        }
-    }
-
     @SubscribeEvent
     public static void onRenderWorld(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
@@ -224,7 +263,8 @@ public class ScannerHandler {
         PoseStack poseStack = event.getPoseStack();
         Vec3 cameraPos = event.getCamera().getPosition();
 
-        activePings.sort((a, b) -> {
+        List<ScanResult> renderList = new ArrayList<>(activePings);
+        renderList.sort((a, b) -> {
             double distA = a.pos.distToCenterSqr(cameraPos);
             double distB = b.pos.distToCenterSqr(cameraPos);
             return Double.compare(distB, distA);
@@ -239,25 +279,21 @@ public class ScannerHandler {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
-        for (ScanResult ping : activePings) {
+        for (ScanResult ping : renderList) {
             float alpha = calculateAlpha(ping);
             if (alpha <= 0.1) continue;
             renderPingBeam(poseStack, buffer, cameraPos, ping, alpha);
         }
-
         MeshData beamMesh = buffer.build();
         if (beamMesh != null) BufferUploader.drawWithShader(beamMesh);
 
         RenderSystem.lineWidth(5.0f);
         buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
-
-        for (ScanResult ping : activePings) {
+        for (ScanResult ping : renderList) {
             float alpha = calculateAlpha(ping);
             if (alpha <= 0.1) continue;
             renderPingBox(poseStack, buffer, cameraPos, ping, alpha);
         }
-
         MeshData boxMesh = buffer.build();
         if (boxMesh != null) BufferUploader.drawWithShader(boxMesh);
 
@@ -266,7 +302,7 @@ public class ScannerHandler {
             RenderSystem.lineWidth(1.0f);
             MultiBufferSource.BufferSource textBuffer = MultiBufferSource.immediate(new ByteBufferBuilder(1536));
 
-            for (ScanResult ping : activePings) {
+            for (ScanResult ping : renderList) {
                 float alpha = calculateAlpha(ping);
                 if (alpha <= 0.1) continue;
                 renderPingText(poseStack, textBuffer, mc, cameraPos, ping, alpha);
