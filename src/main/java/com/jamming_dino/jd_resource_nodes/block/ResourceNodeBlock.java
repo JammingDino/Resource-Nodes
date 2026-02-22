@@ -2,6 +2,7 @@ package com.jamming_dino.jd_resource_nodes.block;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodeTier;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
+import com.jamming_dino.jd_resource_nodes.ResourceNodesConfig; // Import Config
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,6 +30,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList; // Added
 import java.util.List;
 
 public class ResourceNodeBlock extends Block implements EntityBlock {
@@ -58,21 +60,16 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
         BlockEntity be = level.getBlockEntity(pos);
         ResourceNodeBlockEntity nodeBe = (be instanceof ResourceNodeBlockEntity) ? (ResourceNodeBlockEntity) be : null;
 
-        // --- NEW: Check if it is currently regenerating (Stone state) ---
+        // --- Stone State ---
         if (state.getValue(REGENERATING)) {
-            // If it's stone, we only allow breaking if the player specifically wants to remove it
-            // (Creative Mode or Sneaking)
             if (player.isCreative() || player.isShiftKeyDown()) {
                 if (nodeBe != null) nodeBe.setPermanentlyRemoved(true);
-                return true; // Allow vanilla break (drops Cobblestone/Base block)
+                return true;
             }
-
-            // If they are just hitting the Stone with a pickaxe, DO NOTHING.
-            // Do not drop items. Do not damage tool. Do not reset timer.
-            return false; // Cancel event
+            return false;
         }
 
-        // --- Below is Logic for when it is ORE ---
+        // --- Ore State ---
 
         // 1. Creative Mode -> REMOVE
         if (player.isCreative()) {
@@ -89,7 +86,6 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
 
         if (hasSilkTouch) {
             if (nodeBe != null) nodeBe.setPermanentlyRemoved(true);
-            // Drop THIS block
             Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(this));
             return true;
         }
@@ -97,12 +93,14 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
         // 3. Crouching (Shift) -> DROP ORE & REMOVE
         if (player.isShiftKeyDown()) {
             if (nodeBe != null) nodeBe.setPermanentlyRemoved(true);
-            dropOreLoot(level, pos, heldItem);
+            // Just one drop for breaking the block itself
+            dropOreLoot(level, pos, heldItem, 1);
             return true;
         }
 
         // 4. Normal Mining -> REGENERATE
-        dropOreLoot(level, pos, heldItem);
+        // Loop drops based on tier
+        dropOreLoot(level, pos, heldItem, tier.getDropCount());
         deplete(level, pos, state);
 
         // Vanilla Tool Damage Logic
@@ -111,7 +109,7 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
         return false; // Cancel event
     }
 
-    private void dropOreLoot(Level level, BlockPos pos, ItemStack tool) {
+    private void dropOreLoot(Level level, BlockPos pos, ItemStack tool, int multiplier) {
         if (level instanceof ServerLevel serverLevel) {
             BlockState oreState = originalOre.defaultBlockState();
 
@@ -120,10 +118,19 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
                     .withParameter(LootContextParams.TOOL, tool)
                     .withParameter(LootContextParams.BLOCK_STATE, oreState);
 
-            List<ItemStack> drops = oreState.getDrops(builder);
+            // Get standard drops once
+            List<ItemStack> singleDropList = oreState.getDrops(builder);
 
-            // Use shared logic
-            spawnSmartDrops(level, pos, drops);
+            // Multiply them
+            List<ItemStack> finalDrops = new ArrayList<>();
+            for (int i = 0; i < multiplier; i++) {
+                // We must copy stacks so they don't reference the same object
+                for (ItemStack stack : singleDropList) {
+                    finalDrops.add(stack.copy());
+                }
+            }
+
+            spawnSmartDrops(level, pos, finalDrops);
         }
     }
 
@@ -131,7 +138,8 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
         level.setBlock(pos, oldState.setValue(REGENERATING, true), 3);
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof ResourceNodeBlockEntity nodeBe) {
-            nodeBe.activate(tier.getRegenerateTicks());
+            // Use global config for time
+            nodeBe.activate(ResourceNodesConfig.getRegenerateTicks());
         }
     }
 
@@ -158,7 +166,8 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
                     BlockEntity newBe = level.getBlockEntity(pos);
                     if (newBe instanceof ResourceNodeBlockEntity newNodeBe) {
                         if (wasOre) {
-                            newNodeBe.activate(tier.getRegenerateTicks());
+                            // Reset timer to global config
+                            newNodeBe.activate(ResourceNodesConfig.getRegenerateTicks());
 
                             // C. Machine Drops (No Tool)
                             if (level instanceof ServerLevel serverLevel) {
@@ -168,13 +177,22 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
                                         .withParameter(LootContextParams.TOOL, ItemStack.EMPTY)
                                         .withParameter(LootContextParams.BLOCK_STATE, oreState);
 
-                                List<ItemStack> drops = oreState.getDrops(builder);
+                                List<ItemStack> singleDrops = oreState.getDrops(builder);
 
-                                // Use shared logic
-                                spawnSmartDrops(level, pos, drops);
+                                // Apply Tier Multiplier
+                                List<ItemStack> finalDrops = new ArrayList<>();
+                                int multiplier = tier.getDropCount();
+                                for (int i = 0; i < multiplier; i++) {
+                                    for (ItemStack stack : singleDrops) {
+                                        finalDrops.add(stack.copy());
+                                    }
+                                }
+
+                                spawnSmartDrops(level, pos, finalDrops);
                             }
                         } else {
-                            newNodeBe.activate(oldTimer > 0 ? oldTimer : tier.getRegenerateTicks());
+                            // If it was already regenerating, keep the old timer
+                            newNodeBe.activate(oldTimer > 0 ? oldTimer : ResourceNodesConfig.getRegenerateTicks());
                         }
                     }
                     return; // Stop removal
@@ -187,67 +205,35 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
     // --- SHARED HELPER: Smart Drops ---
     private void spawnSmartDrops(Level level, BlockPos pos, List<ItemStack> drops) {
         BlockPos belowPos = pos.below();
-
-        // --- NEW: INVENTORY AUTO-INSERTION LOGIC ---
-
-        // Check for an item handler (Inventory/Chests/Barrels/Hoppers/Pipes)
-        // We use Direction.UP because we are inserting into the TOP face of the block below us.
         IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, belowPos, Direction.UP);
 
         if (handler != null) {
-            // Iterate through the drops and attempt to insert them
             for (int i = 0; i < drops.size(); i++) {
                 ItemStack stack = drops.get(i);
                 if (stack.isEmpty()) continue;
-
-                // insertItemStacked handles finding slots and stacking. 'false' means actually execute the action.
-                // It returns the remainder (what didn't fit).
                 ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, stack, false);
-
-                // Update the list with the remainder (so the entity spawn logic below only handles what didn't fit)
                 drops.set(i, remainder);
             }
         }
 
-        // --- END AUTO-INSERTION LOGIC ---
-
-        // Proceed to spawn entities for anything that remains (was not inserted or no inventory found)
         BlockPos abovePos = pos.above();
-
-        // Check 1: Is the block Air?
-        // Check 2: If not Air, is the collision shape empty (e.g. Grass, Water)?
         boolean isBelowFree = level.isEmptyBlock(belowPos) || level.getBlockState(belowPos).getCollisionShape(level, belowPos).isEmpty();
         boolean isAboveFree = level.isEmptyBlock(abovePos) || level.getBlockState(abovePos).getCollisionShape(level, abovePos).isEmpty();
 
         double spawnY;
 
-        if (isBelowFree) {
-            // PREFERRED: Drop below
-            spawnY = pos.getY() - 0.5;
-        } else if (isAboveFree) {
-            // SECONDARY: Drop above
-            spawnY = pos.getY() + 1.2;
-        } else {
-            // FALLBACK: Inside
-            spawnY = pos.getY() + 0.5;
-        }
+        if (isBelowFree) spawnY = pos.getY() - 0.5;
+        else if (isAboveFree) spawnY = pos.getY() + 1.2;
+        else spawnY = pos.getY() + 0.5;
 
         for (ItemStack stack : drops) {
-            if (stack.isEmpty()) continue; // Skip if empty (fully inserted into inventory)
-
+            if (stack.isEmpty()) continue;
             ItemEntity itemEntity = new ItemEntity(level, pos.getX() + 0.5, spawnY, pos.getZ() + 0.5, stack);
-
-            // If we found a free spot, kill velocity so it doesn't drift
-            if (isBelowFree || isAboveFree) {
-                itemEntity.setDeltaMovement(0, 0, 0);
-            }
-
+            if (isBelowFree || isAboveFree) itemEntity.setDeltaMovement(0, 0, 0);
             itemEntity.setDefaultPickUpDelay();
             level.addFreshEntity(itemEntity);
         }
     }
-
-    // --- EntityBlock Implementation ---
 
     @Nullable
     @Override

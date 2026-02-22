@@ -10,7 +10,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.neoforged.fml.ModList; // Import ModList to read metadata
+import net.neoforged.fml.ModList;
 
 public class ConfigScreen extends Screen {
     private final Screen parent;
@@ -18,23 +18,19 @@ public class ConfigScreen extends Screen {
     // Text fields for numeric settings
     private EditBox textScaleField;
     private EditBox scannerRadiusField;
-    private EditBox impureTicksField;
-    private EditBox normalTicksField;
-    private EditBox pureTicksField;
+    private EditBox regenerateTicksField; // Replaced the 3 individual fields
 
     // Toggle button
     private CycleButton<Boolean> textEnabledButton;
 
-    // Action buttons (Fixed at bottom)
+    // Action buttons
     private Button saveButton;
     private Button cancelButton;
 
     // Temporary values
     private float tempTextScale;
     private int tempScannerRadius;
-    private int tempImpureTicks;
-    private int tempNormalTicks;
-    private int tempPureTicks;
+    private int tempRegenerateTicks; // Single value
     private boolean tempTextEnabled;
 
     // Scroll variables
@@ -42,19 +38,15 @@ public class ConfigScreen extends Screen {
     private int contentHeight = 0;
     private static final int HEADER_HEIGHT = 40;
     private static final int FOOTER_HEIGHT = 40;
-    private static final int ENTRY_HEIGHT = 45; // Height reserved per setting
+    private static final int ENTRY_HEIGHT = 45;
 
     public ConfigScreen(Screen parent) {
-        // Fetch the version from NeoForge metadata (which is set by your GitHub Action)
         super(Component.literal("Resource Nodes Config v" + getModVersion()));
         this.parent = parent;
 
-        // Load current values
         this.tempTextScale = ResourceNodesConfig.getTextScale();
         this.tempScannerRadius = ResourceNodesConfig.getScannerRadius();
-        this.tempImpureTicks = ResourceNodesConfig.getImpureTicks();
-        this.tempNormalTicks = ResourceNodesConfig.getNormalTicks();
-        this.tempPureTicks = ResourceNodesConfig.getPureTicks();
+        this.tempRegenerateTicks = ResourceNodesConfig.getRegenerateTicks(); // Load single value
         this.tempTextEnabled = ResourceNodesConfig.isTextEnabled();
     }
 
@@ -71,7 +63,6 @@ public class ConfigScreen extends Screen {
         int fieldHeight = 20;
 
         // 1. Create Scrollable Content
-        // We create them, but we set their positions dynamically in updateWidgetPositions()
 
         textEnabledButton = CycleButton.booleanBuilder(Component.literal("ON"), Component.literal("OFF"))
                 .withInitialValue(tempTextEnabled)
@@ -90,28 +81,16 @@ public class ConfigScreen extends Screen {
         scannerRadiusField.setResponder(this::onScannerRadiusChanged);
         this.addRenderableWidget(scannerRadiusField);
 
-        impureTicksField = new EditBox(this.font, 0, 0, fieldWidth, fieldHeight, Component.literal("Impure Ticks"));
-        impureTicksField.setValue(String.valueOf(tempImpureTicks));
-        impureTicksField.setMaxLength(6);
-        impureTicksField.setResponder(this::onImpureTicksChanged);
-        this.addRenderableWidget(impureTicksField);
+        regenerateTicksField = new EditBox(this.font, 0, 0, fieldWidth, fieldHeight, Component.literal("Regeneration Ticks"));
+        regenerateTicksField.setValue(String.valueOf(tempRegenerateTicks));
+        regenerateTicksField.setMaxLength(6);
+        regenerateTicksField.setResponder(this::onRegenerateTicksChanged);
+        this.addRenderableWidget(regenerateTicksField);
 
-        normalTicksField = new EditBox(this.font, 0, 0, fieldWidth, fieldHeight, Component.literal("Normal Ticks"));
-        normalTicksField.setValue(String.valueOf(tempNormalTicks));
-        normalTicksField.setMaxLength(6);
-        normalTicksField.setResponder(this::onNormalTicksChanged);
-        this.addRenderableWidget(normalTicksField);
+        // Calculate total content height (4 items)
+        this.contentHeight = 4 * ENTRY_HEIGHT;
 
-        pureTicksField = new EditBox(this.font, 0, 0, fieldWidth, fieldHeight, Component.literal("Pure Ticks"));
-        pureTicksField.setValue(String.valueOf(tempPureTicks));
-        pureTicksField.setMaxLength(6);
-        pureTicksField.setResponder(this::onPureTicksChanged);
-        this.addRenderableWidget(pureTicksField);
-
-        // Calculate total content height (6 items * height per item)
-        this.contentHeight = 6 * ENTRY_HEIGHT;
-
-        // 2. Fixed Buttons (Footer)
+        // 2. Fixed Buttons
         saveButton = Button.builder(Component.literal("Save"), button -> saveAndClose())
                 .bounds(centerX - fieldWidth / 2, this.height - 30, fieldWidth / 2 - 5, 20)
                 .build();
@@ -128,9 +107,8 @@ public class ConfigScreen extends Screen {
     private void updateWidgetPositions() {
         int centerX = this.width / 2;
         int fieldWidth = 200;
-        int startY = HEADER_HEIGHT - (int) scrollAmount; // Start drawing content here
+        int startY = HEADER_HEIGHT - (int) scrollAmount;
 
-        // Helper to position widget and increment Y
         int currentY = startY;
 
         // 1. Text Enabled
@@ -145,16 +123,8 @@ public class ConfigScreen extends Screen {
         scannerRadiusField.setPosition(centerX - fieldWidth / 2, currentY + 12);
         currentY += ENTRY_HEIGHT;
 
-        // 4. Impure Ticks
-        impureTicksField.setPosition(centerX - fieldWidth / 2, currentY + 12);
-        currentY += ENTRY_HEIGHT;
-
-        // 5. Normal Ticks
-        normalTicksField.setPosition(centerX - fieldWidth / 2, currentY + 12);
-        currentY += ENTRY_HEIGHT;
-
-        // 6. Pure Ticks
-        pureTicksField.setPosition(centerX - fieldWidth / 2, currentY + 12);
+        // 4. Regeneration Ticks
+        regenerateTicksField.setPosition(centerX - fieldWidth / 2, currentY + 12);
     }
 
     @Override
@@ -182,24 +152,10 @@ public class ConfigScreen extends Screen {
         } catch (NumberFormatException ignored) {}
     }
 
-    private void onImpureTicksChanged(String value) {
+    private void onRegenerateTicksChanged(String value) {
         try {
             int parsed = Integer.parseInt(value);
-            if (parsed > 0) tempImpureTicks = parsed;
-        } catch (NumberFormatException ignored) {}
-    }
-
-    private void onNormalTicksChanged(String value) {
-        try {
-            int parsed = Integer.parseInt(value);
-            if (parsed > 0) tempNormalTicks = parsed;
-        } catch (NumberFormatException ignored) {}
-    }
-
-    private void onPureTicksChanged(String value) {
-        try {
-            int parsed = Integer.parseInt(value);
-            if (parsed > 0) tempPureTicks = parsed;
+            if (parsed > 0) tempRegenerateTicks = parsed;
         } catch (NumberFormatException ignored) {}
     }
 
@@ -207,9 +163,7 @@ public class ConfigScreen extends Screen {
         ResourceNodesConfig.setTextEnabled(tempTextEnabled);
         ResourceNodesConfig.setTextScale(tempTextScale);
         ResourceNodesConfig.setScannerRadius(tempScannerRadius);
-        ResourceNodesConfig.setImpureTicks(tempImpureTicks);
-        ResourceNodesConfig.setNormalTicks(tempNormalTicks);
-        ResourceNodesConfig.setPureTicks(tempPureTicks);
+        ResourceNodesConfig.setRegenerateTicks(tempRegenerateTicks);
         this.minecraft.setScreen(parent);
     }
 
@@ -217,21 +171,15 @@ public class ConfigScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        // --- Render Scrollable Content ---
-
-        // Use Scissor to clip content between Header and Footer
         graphics.enableScissor(0, HEADER_HEIGHT, this.width, this.height - FOOTER_HEIGHT);
-
-        // Render widgets (Super handles buttons/editboxes)
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        // Render Labels Manually based on scroll position
         int centerX = this.width / 2;
         int fieldWidth = 200;
         int startY = HEADER_HEIGHT - (int) scrollAmount;
         int currentY = startY;
 
-        // 1. Text Enabled (Label handled by CycleButton)
+        // 1. Text Enabled
         currentY += ENTRY_HEIGHT;
 
         // 2. Text Scale
@@ -242,29 +190,20 @@ public class ConfigScreen extends Screen {
         graphics.drawString(this.font, "Scanner Radius (16 - 512):", centerX - fieldWidth / 2, currentY, 0xAAAAAA);
         currentY += ENTRY_HEIGHT;
 
-        // 4. Impure Ticks
-        graphics.drawString(this.font, "Impure Ticks:", centerX - fieldWidth / 2, currentY, 0xAAAAAA);
-        currentY += ENTRY_HEIGHT;
-
-        // 5. Normal Ticks
-        graphics.drawString(this.font, "Normal Ticks:", centerX - fieldWidth / 2, currentY, 0xAAAAAA);
-        currentY += ENTRY_HEIGHT;
-
-        // 6. Pure Ticks
-        graphics.drawString(this.font, "Pure Ticks:", centerX - fieldWidth / 2, currentY, 0xAAAAAA);
+        // 4. Regeneration Ticks
+        graphics.drawString(this.font, "Regeneration Ticks (All Tiers):", centerX - fieldWidth / 2, currentY, 0xAAAAAA);
 
         graphics.disableScissor();
 
-        // --- Render Header (Overlay) ---
-        graphics.fill(0, 0, this.width, HEADER_HEIGHT, 0xDD000000); // Dark background
+        // Header
+        graphics.fill(0, 0, this.width, HEADER_HEIGHT, 0xDD000000);
         graphics.drawCenteredString(this.font, this.title, centerX, 15, 0xFFFFFF);
         graphics.hLine(0, this.width, HEADER_HEIGHT - 1, 0xFF555555);
 
-        // --- Render Footer (Overlay) ---
+        // Footer
         graphics.fill(0, this.height - FOOTER_HEIGHT, this.width, this.height, 0xDD000000);
         graphics.hLine(0, this.width, this.height - FOOTER_HEIGHT, 0xFF555555);
 
-        // Re-render buttons so they appear ON TOP of the footer background
         saveButton.render(graphics, mouseX, mouseY, partialTick);
         cancelButton.render(graphics, mouseX, mouseY, partialTick);
     }
