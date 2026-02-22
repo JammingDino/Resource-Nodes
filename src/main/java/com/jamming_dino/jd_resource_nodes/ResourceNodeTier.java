@@ -2,7 +2,6 @@ package com.jamming_dino.jd_resource_nodes;
 
 import net.minecraft.util.StringRepresentable;
 
-// 'StringIdentifiable' became 'StringRepresentable' in newer mappings
 public enum ResourceNodeTier implements StringRepresentable {
     IMPURE("impure"),
     NORMAL("normal"),
@@ -14,17 +13,17 @@ public enum ResourceNodeTier implements StringRepresentable {
         this.name = name;
     }
 
-    public int getRegenerateTicks() {
+    public int getDropCount() {
         switch (this) {
-            case IMPURE: return ResourceNodesConfig.getImpureTicks();
-            case NORMAL: return ResourceNodesConfig.getNormalTicks();
-            case PURE:   return ResourceNodesConfig.getPureTicks();
-            default:     return 600;
+            case IMPURE: return 1;
+            case NORMAL: return 2;
+            case PURE:   return 3;
+            default:     return 1;
         }
     }
 
     @Override
-    public String getSerializedName() { // 'asString' is now 'getSerializedName'
+    public String getSerializedName() {
         return name;
     }
 }

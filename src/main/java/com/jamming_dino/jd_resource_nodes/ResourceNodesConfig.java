@@ -15,10 +15,8 @@ public class ResourceNodesConfig {
 
     private static ResourceNodesConfig INSTANCE;
 
-    // Regeneration tick settings - MUST be int, not float!
-    public int impure_ticks = 1200;
-    public int normal_ticks = 600;
-    public int pure_ticks = 200;
+    // Regeneration tick settings - Single value for all tiers now
+    public int regeneration_ticks = 600;
 
     // Pinger display settings
     public boolean text_enabled = true;
@@ -27,16 +25,8 @@ public class ResourceNodesConfig {
     // Scanner settings
     public int scanner_radius = 128;
 
-    public static int getImpureTicks() {
-        return INSTANCE.impure_ticks;
-    }
-
-    public static int getNormalTicks() {
-        return INSTANCE.normal_ticks;
-    }
-
-    public static int getPureTicks() {
-        return INSTANCE.pure_ticks;
+    public static int getRegenerateTicks() {
+        return INSTANCE.regeneration_ticks;
     }
 
     public static boolean isTextEnabled() {
@@ -51,18 +41,8 @@ public class ResourceNodesConfig {
         return INSTANCE.scanner_radius;
     }
 
-    public static void setImpureTicks(int ticks) {
-        INSTANCE.impure_ticks = Math.max(1, Math.min(72000, ticks)); // Clamp 1-72000 (1 tick to 1 hour)
-        save();
-    }
-
-    public static void setNormalTicks(int ticks) {
-        INSTANCE.normal_ticks = Math.max(1, Math.min(72000, ticks)); // Clamp 1-72000 (1 tick to 1 hour)
-        save();
-    }
-
-    public static void setPureTicks(int ticks) {
-        INSTANCE.pure_ticks = Math.max(1, Math.min(72000, ticks)); // Clamp 1-72000 (1 tick to 1 hour)
+    public static void setRegenerateTicks(int ticks) {
+        INSTANCE.regeneration_ticks = Math.max(1, Math.min(72000, ticks)); // Clamp 1-72000 (1 tick to 1 hour)
         save();
     }
 
@@ -86,7 +66,6 @@ public class ResourceNodesConfig {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
                 ResourceNodesConfig loaded = GSON.fromJson(reader, ResourceNodesConfig.class);
 
-                // If loaded config is null or missing values, use defaults
                 if (loaded == null) {
                     INSTANCE = new ResourceNodesConfig();
                 } else {
@@ -96,21 +75,14 @@ public class ResourceNodesConfig {
                     if (INSTANCE.text_scale < 0.1f || INSTANCE.text_scale > 5.0f) {
                         INSTANCE.text_scale = 1.0f;
                     }
-                    if (INSTANCE.impure_ticks < 1 || INSTANCE.impure_ticks > 72000) {
-                        INSTANCE.impure_ticks = 1200;
-                    }
-                    if (INSTANCE.normal_ticks < 1 || INSTANCE.normal_ticks > 72000) {
-                        INSTANCE.normal_ticks = 600;
-                    }
-                    if (INSTANCE.pure_ticks < 1 || INSTANCE.pure_ticks > 72000) {
-                        INSTANCE.pure_ticks = 200;
+                    if (INSTANCE.regeneration_ticks < 1 || INSTANCE.regeneration_ticks > 72000) {
+                        INSTANCE.regeneration_ticks = 600;
                     }
                     if (INSTANCE.scanner_radius < 16 || INSTANCE.scanner_radius > 512) {
                         INSTANCE.scanner_radius = 128;
                     }
-                    // Note: text_enabled defaults to true in the class definition
                 }
-                save(); // Save to ensure file is up to date with any corrections
+                save();
             } catch (IOException e) {
                 ResourceNodes.LOGGER.error("Failed to load config, using defaults.", e);
                 INSTANCE = new ResourceNodesConfig();
