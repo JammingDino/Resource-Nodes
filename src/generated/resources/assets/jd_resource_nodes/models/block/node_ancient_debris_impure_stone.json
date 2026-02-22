@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "jd_resource_nodes:block/node_netherrack_impure"
-  }
-}

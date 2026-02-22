@@ -23,12 +23,22 @@ public class ResourceNodesLangProvider extends LanguageProvider {
         add("config.jd_resource_nodes.text_scale", "Text Scale");
         add("config.jd_resource_nodes.scanner_radius", "Scanner Radius");
         add("config.jd_resource_nodes.regeneration", "Regeneration Settings");
-        add("config.jd_resource_nodes.regenerate_ticks", "Regeneration Ticks"); // New generic key
+        add("config.jd_resource_nodes.regenerate_ticks", "Regeneration Ticks");
 
+        // Generate names for Nodes (Blocks)
         for (DeferredBlock<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
             String path = holder.getId().getPath();
             add(holder.get(), generateDisplayName(path));
         }
+
+        // Generate names for Custom Items
+        add(ResourceNodes.BAUXITE.get(), "Bauxite");
+        add(ResourceNodes.LIMESTONE.get(), "Limestone");
+        add(ResourceNodes.SAM.get(), "SAM"); // Strange Alien Metal
+        add(ResourceNodes.SULFUR.get(), "Sulfur");
+        add(ResourceNodes.URANIUM.get(), "Uranium");
+        add(ResourceNodes.CATERIUM.get(), "Caterium");
+        add(ResourceNodes.RAW_QUARTZ.get(), "Raw Quartz");
     }
 
     private String generateDisplayName(String path) {

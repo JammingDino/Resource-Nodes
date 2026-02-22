@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "jd_resource_nodes:block/node_copper_impure"
+    "all": "minecraft:block/copper_ore"
   }
 }

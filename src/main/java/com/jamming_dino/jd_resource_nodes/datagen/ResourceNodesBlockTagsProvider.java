@@ -4,9 +4,9 @@ import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
-import net.minecraft.resources.ResourceLocation; // Import this
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.TagKey; // Import this
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.common.data.BlockTagsProvider;
@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 
 public class ResourceNodesBlockTagsProvider extends BlockTagsProvider {
 
-    // Define the Create Mod Tag manually (since we don't depend on Create at compile time)
     public static final TagKey<Block> CREATE_NON_MOVABLE = BlockTags.create(ResourceLocation.fromNamespaceAndPath("create", "non_movable"));
 
     public ResourceNodesBlockTagsProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> lookupProvider, @Nullable ExistingFileHelper existingFileHelper) {
@@ -37,7 +36,9 @@ public class ResourceNodesBlockTagsProvider extends BlockTagsProvider {
             // 2. All nodes are mineable with a pickaxe
             tag(BlockTags.MINEABLE_WITH_PICKAXE).add(block);
 
-            // 3. Tiers
+            // 3. Tiers (Mining Level)
+
+            // Vanilla-logic ores
             if (original == Blocks.ANCIENT_DEBRIS) {
                 tag(BlockTags.NEEDS_DIAMOND_TOOL).add(block);
             }
@@ -47,9 +48,9 @@ public class ResourceNodesBlockTagsProvider extends BlockTagsProvider {
                     original == Blocks.REDSTONE_ORE || original == Blocks.DEEPSLATE_REDSTONE_ORE) {
                 tag(BlockTags.NEEDS_IRON_TOOL).add(block);
             }
-            else if (original == Blocks.IRON_ORE || original == Blocks.DEEPSLATE_IRON_ORE ||
-                    original == Blocks.COPPER_ORE || original == Blocks.DEEPSLATE_COPPER_ORE ||
-                    original == Blocks.LAPIS_ORE || original == Blocks.DEEPSLATE_LAPIS_ORE) {
+            // Catch-all for Custom Ores (original is AIR) + Iron + Copper + Lapis
+            // This ensures Bauxite, SAM, etc require a Stone Pickaxe or better
+            else {
                 tag(BlockTags.NEEDS_STONE_TOOL).add(block);
             }
         }
