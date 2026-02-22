@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "regenerating=false": {
+      "model": "jd_resource_nodes:block/node_bauxite_pure_ore"
+    },
+    "regenerating=true": {
+      "model": "jd_resource_nodes:block/node_bauxite_pure_regenerating"
+    }
+  }
+}
