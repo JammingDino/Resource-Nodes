@@ -17,7 +17,7 @@ public enum ResourceNodeTier implements StringRepresentable {
         switch (this) {
             case IMPURE: return 1;
             case NORMAL: return 2;
-            case PURE:   return 3;
+            case PURE:   return 4;
             default:     return 1;
         }
     }
