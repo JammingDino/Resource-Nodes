@@ -18,7 +18,7 @@ public class ResourceNodesModelProvider extends BlockStateProvider {
 
     // List of names that should pull from Minecraft namespace for Stone/Deepslate variants
     private static final List<String> VANILLA_NAMES = List.of(
-            "copper", "iron", "gold"
+            "copper", "gold"
     );
 
     public ResourceNodesModelProvider(PackOutput output, ExistingFileHelper exFileHelper) {
