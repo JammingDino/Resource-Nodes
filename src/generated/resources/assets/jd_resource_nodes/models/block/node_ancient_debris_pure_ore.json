@@ -1,7 +1,8 @@
 {
-  "parent": "minecraft:block/cube_column",
+  "parent": "jd_resource_nodes:block/node_layered_cube",
   "textures": {
-    "end": "jd_resource_nodes:block/node_ancient_debris_pure_top",
-    "side": "jd_resource_nodes:block/node_ancient_debris_pure_side"
+    "base": "minecraft:block/ancient_debris_side",
+    "overlay": "jd_resource_nodes:block/input/border_pure",
+    "particle": "minecraft:block/ancient_debris_side"
   }
 }

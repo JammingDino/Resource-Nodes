@@ -4,6 +4,7 @@ import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.jamming_dino.jd_resource_nodes.command.ScannerCommands;
+import com.jamming_dino.jd_resource_nodes.network.NodeSettingsNetworkSync;
 import com.jamming_dino.jd_resource_nodes.network.SyncScannerUnlocksPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,6 +28,7 @@ public class ResourceNodesEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
             PacketDistributor.sendToPlayer(player, new SyncScannerUnlocksPacket(data.getUnlockedCategories()));
+            NodeSettingsNetworkSync.syncTo(player);
         }
     }
 

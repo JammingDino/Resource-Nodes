@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "jd_resource_nodes:block/node_layered_cube",
   "textures": {
-    "all": "jd_resource_nodes:block/node_lapis_normal"
+    "base": "minecraft:block/lapis_ore",
+    "overlay": "jd_resource_nodes:block/input/border_normal",
+    "particle": "minecraft:block/lapis_ore"
   }
 }

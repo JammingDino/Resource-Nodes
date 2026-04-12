@@ -8,6 +8,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ResourceNodesConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -25,6 +29,12 @@ public class ResourceNodesConfig {
     // Scanner settings
     public int scanner_radius = 128;
 
+    // Optional map-pack custom nodes.
+    public List<CustomNodeConfig> custom_nodes = new ArrayList<>();
+
+    // Global (pack/server) node disable list.
+    public List<String> disabled_nodes_global = new ArrayList<>();
+
     public static int getRegenerateTicks() {
         return INSTANCE.regeneration_ticks;
     }
@@ -39,6 +49,61 @@ public class ResourceNodesConfig {
 
     public static int getScannerRadius() {
         return INSTANCE.scanner_radius;
+    }
+
+    public static List<CustomNodeConfig> getCustomNodes() {
+        return INSTANCE.custom_nodes;
+    }
+
+    public static List<String> getDisabledNodesGlobal() {
+        return INSTANCE.disabled_nodes_global;
+    }
+
+    public static boolean isNodeGloballyEnabled(String blockId) {
+        return !INSTANCE.disabled_nodes_global.contains(blockId);
+    }
+
+    public static void setNodeGloballyEnabled(String blockId, boolean enabled) {
+        if (blockId == null || blockId.isBlank()) {
+            return;
+        }
+
+        if (enabled) {
+            INSTANCE.disabled_nodes_global.remove(blockId);
+        } else if (!INSTANCE.disabled_nodes_global.contains(blockId)) {
+            INSTANCE.disabled_nodes_global.add(blockId);
+        }
+
+        ResourceNodes.LOGGER.info("Set global node state: {} -> {}", blockId, enabled ? "ENABLED" : "DISABLED");
+        save();
+    }
+
+    public static void addCustomNode(CustomNodeConfig config) {
+        if (config == null) {
+            return;
+        }
+
+        String incomingId = sanitizeId(config.id);
+        for (int i = 0; i < INSTANCE.custom_nodes.size(); i++) {
+            CustomNodeConfig existing = INSTANCE.custom_nodes.get(i);
+            if (sanitizeId(existing.id).equals(incomingId)) {
+                INSTANCE.custom_nodes.set(i, config);
+                ResourceNodes.LOGGER.info("Updated custom node config id='{}'", incomingId);
+                save();
+                return;
+            }
+        }
+
+        INSTANCE.custom_nodes.add(config);
+        ResourceNodes.LOGGER.info("Added custom node config id='{}'", incomingId);
+        save();
+    }
+
+    private static String sanitizeId(String id) {
+        if (id == null) {
+            return "";
+        }
+        return id.toLowerCase().replaceAll("[^a-z0-9_]+", "_");
     }
 
     public static void setRegenerateTicks(int ticks) {
@@ -81,6 +146,18 @@ public class ResourceNodesConfig {
                     if (INSTANCE.scanner_radius < 16 || INSTANCE.scanner_radius > 512) {
                         INSTANCE.scanner_radius = 128;
                     }
+                    if (INSTANCE.custom_nodes == null) {
+                        INSTANCE.custom_nodes = new ArrayList<>();
+                    } else {
+                        Map<String, CustomNodeConfig> deduped = new LinkedHashMap<>();
+                        for (CustomNodeConfig custom : INSTANCE.custom_nodes) {
+                            deduped.put(sanitizeId(custom.id), custom);
+                        }
+                        INSTANCE.custom_nodes = new ArrayList<>(deduped.values());
+                    }
+                    if (INSTANCE.disabled_nodes_global == null) {
+                        INSTANCE.disabled_nodes_global = new ArrayList<>();
+                    }
                 }
                 save();
             } catch (IOException e) {
@@ -97,8 +174,28 @@ public class ResourceNodesConfig {
     public static void save() {
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(INSTANCE, writer);
+            ResourceNodes.LOGGER.info("Saved config file: {}", CONFIG_FILE.getAbsolutePath());
         } catch (IOException e) {
             ResourceNodes.LOGGER.error("Failed to save config.", e);
         }
+    }
+
+    public static class CustomNodeConfig {
+        public String id = "";
+        public String category = "";
+        public String purity_mode = "all";
+
+
+        // Block visual when node is ready to mine.
+        public String ready_block = "minecraft:stone";
+
+        // Block visual while regenerating.
+        public String regenerating_block = "minecraft:stone";
+
+        // Main output used by scanner category display.
+        public String output_item = "minecraft:raw_iron";
+
+        // Uses existing node overlay textures, e.g. iron, diamond, nether_quartz.
+        public String overlay_source = "iron";
     }
 }

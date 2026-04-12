@@ -24,6 +24,9 @@ public class ResourceNodesLangProvider extends LanguageProvider {
         add("config.jd_resource_nodes.scanner_radius", "Scanner Radius");
         add("config.jd_resource_nodes.regeneration", "Regeneration Settings");
         add("config.jd_resource_nodes.regenerate_ticks", "Regeneration Ticks"); // New generic key
+        add("item.jd_resource_nodes.purity.impure", "Impure");
+        add("item.jd_resource_nodes.purity.normal", "Normal");
+        add("item.jd_resource_nodes.purity.pure", "Pure");
 
         for (DeferredBlock<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
             String path = holder.getId().getPath();

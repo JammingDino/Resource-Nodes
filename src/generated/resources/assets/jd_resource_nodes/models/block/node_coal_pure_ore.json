@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "jd_resource_nodes:block/node_layered_cube",
   "textures": {
-    "all": "jd_resource_nodes:block/node_coal_pure"
+    "base": "minecraft:block/coal_ore",
+    "overlay": "jd_resource_nodes:block/input/border_pure",
+    "particle": "minecraft:block/coal_ore"
   }
 }

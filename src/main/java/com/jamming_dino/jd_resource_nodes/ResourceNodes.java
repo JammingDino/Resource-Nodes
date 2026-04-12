@@ -4,11 +4,15 @@ import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
+import com.jamming_dino.jd_resource_nodes.item.CustomNodeBlockItem;
+import com.jamming_dino.jd_resource_nodes.item.NodeConfiguratorItem;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -131,6 +135,10 @@ public class ResourceNodes {
                     ).build(null)
             );
 
+    public static final DeferredItem<NodeConfiguratorItem> NODE_CONFIGURATOR = ITEMS.register("node_configurator",
+            () -> new NodeConfiguratorItem(new Item.Properties().stacksTo(1))
+    );
+
     // --- Creative Tab ---
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = CREATIVE_MODE_TABS.register("general", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + MODID + ".general"))
@@ -140,12 +148,14 @@ public class ResourceNodes {
                 for (DeferredBlock<ResourceNodeBlock> block : REGISTERED_NODES) {
                     output.accept(block);
                 }
+                output.accept(NODE_CONFIGURATOR.get());
             })
             .build());
 
     // --- Constructor ---
     public ResourceNodes(IEventBus modEventBus, net.neoforged.fml.ModContainer modContainer) {
         ResourceNodesConfig.load();
+        registerConfiguredCustomNodes();
         LOGGER.info("Initializing Resource Nodes (NeoForge 1.21)...");
 
         BLOCKS.register(modEventBus);
@@ -194,19 +204,22 @@ public class ResourceNodes {
         // Register all tiers for this node set
         for (ResourceNodeTier tier : ResourceNodeTier.values()) {
             String regName = "node_" + baseName + "_" + tier.getSerializedName();
-            DeferredBlock<ResourceNodeBlock> registeredBlock = registerNode(regName, originalOre, baseBlock, tier);
+            DeferredBlock<ResourceNodeBlock> registeredBlock = registerNode(regName, originalOre, baseBlock, outputItem, categoryName, tier);
 
             // Store the category-block link for later resolution
             PENDING_CATEGORY_REGISTRATIONS.add(new CategoryRegistration(categoryName, registeredBlock));
         }
     }
 
-    private static DeferredBlock<ResourceNodeBlock> registerNode(String name, Block originalOre, Block baseBlock, ResourceNodeTier tier) {
+    private static DeferredBlock<ResourceNodeBlock> registerNode(String name, Block originalOre, Block baseBlock, Item outputItem, String overlaySource, ResourceNodeTier tier) {
         // Create the Block Supplier
         Supplier<ResourceNodeBlock> blockSupplier = () -> new ResourceNodeBlock(
                 originalOre,
+                originalOre,
                 baseBlock,
+                BuiltInRegistries.ITEM.getKey(outputItem),
                 tier,
+                overlaySource,
                 BlockBehaviour.Properties.ofFullCopy(originalOre)
                         .lightLevel(state -> 0)
         );
@@ -221,5 +234,66 @@ public class ResourceNodes {
         REGISTERED_NODES.add(registeredBlock);
 
         return registeredBlock;
+    }
+
+    private static DeferredBlock<ResourceNodeBlock> registerCustomNode(String name, ResourceLocation readyBlockId, ResourceLocation baseBlockId, ResourceLocation outputItemId, String overlaySource, ResourceNodeTier tier) {
+        Supplier<ResourceNodeBlock> blockSupplier = () -> {
+            Block resolvedReadyBlock = BuiltInRegistries.BLOCK.get(readyBlockId);
+            Block resolvedBaseBlock = BuiltInRegistries.BLOCK.get(baseBlockId);
+
+            Block readyBlock = resolvedReadyBlock == Blocks.AIR ? Blocks.STONE : resolvedReadyBlock;
+            Block baseBlock = resolvedBaseBlock == Blocks.AIR ? Blocks.STONE : resolvedBaseBlock;
+            Block propertySource = resolvedReadyBlock != Blocks.AIR ? resolvedReadyBlock : baseBlock;
+
+            if (resolvedReadyBlock == Blocks.AIR || resolvedBaseBlock == Blocks.AIR) {
+                LOGGER.warn("Custom node '{}' could not resolve all block ids (ready='{}', regen='{}'). Using stone fallback.", name, readyBlockId, baseBlockId);
+            }
+
+            return new ResourceNodeBlock(
+                    readyBlock,
+                    readyBlock,
+                    baseBlock,
+                    outputItemId,
+                    tier,
+                    overlaySource,
+                    BlockBehaviour.Properties.ofFullCopy(propertySource)
+                            .lightLevel(state -> 0)
+            );
+        };
+
+        DeferredBlock<ResourceNodeBlock> registeredBlock = BLOCKS.register(name, blockSupplier);
+        ITEMS.register(name, () -> new CustomNodeBlockItem(registeredBlock.get(), new Item.Properties()));
+        REGISTERED_NODES.add(registeredBlock);
+        return registeredBlock;
+    }
+
+    private static void registerConfiguredCustomNodes() {
+        for (ResourceNodesConfig.CustomNodeConfig config : ResourceNodesConfig.getCustomNodes()) {
+            CustomResourceNodeDefinition definition = CustomResourceNodeDefinition.fromConfig(config);
+            if (definition == null) {
+                continue;
+            }
+
+            Item outputItem = BuiltInRegistries.ITEM.get(definition.outputItemId());
+            Item displayItem = outputItem == Items.AIR ? Items.COBBLESTONE : outputItem;
+
+            ResourceNodeData categoryData = ResourceNodeData.getByCategory(definition.category());
+            if (categoryData == null) {
+                categoryData = ResourceNodeData.register(definition.category(), displayItem, new ItemStack(displayItem));
+            }
+
+            for (ResourceNodeTier tier : definition.purityMode().getTiers()) {
+                String regName = "node_custom_" + definition.id() + "_" + tier.getSerializedName();
+                DeferredBlock<ResourceNodeBlock> registeredBlock = registerCustomNode(
+                        regName,
+                        definition.readyBlockId(),
+                        definition.regeneratingBlockId(),
+                        definition.outputItemId(),
+                        definition.overlaySource(),
+                        tier
+                );
+                PENDING_CATEGORY_REGISTRATIONS.add(new CategoryRegistration(definition.category(), registeredBlock));
+            }
+        }
     }
 }
