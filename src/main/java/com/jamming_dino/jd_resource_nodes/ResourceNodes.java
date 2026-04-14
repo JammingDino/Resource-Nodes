@@ -156,7 +156,7 @@ public class ResourceNodes {
     public ResourceNodes(IEventBus modEventBus, net.neoforged.fml.ModContainer modContainer) {
         ResourceNodesConfig.load();
         registerConfiguredCustomNodes();
-        LOGGER.info("Initializing Resource Nodes (NeoForge 1.21)...");
+        LOGGER.info("Initializing Resource Nodes (NeoForge 1.20.1)...");
 
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);

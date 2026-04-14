@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![NeoForge](https://img.shields.io/badge/Loader-NeoForge-orange)](https://neoforged.net/)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)](https://minecraft.wiki/w/Java_Edition_1.21.1)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green)](https://minecraft.wiki/w/Java_Edition_1.20.1)
 [![Modrinth Downloads](https://img.shields.io/modrinth/dt/kQTp3U9Z?color=00AF5C&logo=modrinth&label=Downloads)](https://modrinth.com/mod/resource-nodes)
 [![CurseForge Downloads](https://img.shields.io/curseforge/dt/1419540?logo=curseforge&label=Downloads)](https://www.curseforge.com/minecraft/mc-mods/resource-nodes)
 
@@ -58,7 +58,7 @@ The regeneration speeds can be adjusted in `config/jd_resource_nodes.json`.
 
 ## Installation
 
-1.  Download and run the **NeoForge Installer** for Minecraft 1.21.1.
+1.  Download and run the **NeoForge Installer** for Minecraft 1.20.1.
 2.  Drop `jd_resource_nodes.jar` into your `mods` folder.
 
 ---

@@ -47,9 +47,7 @@ public class ResourceNodeBlockEntity extends BlockEntity {
         }
     }
 
-    // --- NBT CHANGES FOR 1.21 ---
-    // writeNbt -> saveAdditional
-    // NbtCompound -> CompoundTag
+    // Persist timer state
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);

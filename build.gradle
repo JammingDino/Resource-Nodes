@@ -25,8 +25,8 @@ base {
     archivesName = mod_id
 }
 
-// Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Minecraft 1.20.1 uses Java 17, so mods should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 neoForge {
     // Specify the version of NeoForge to use.

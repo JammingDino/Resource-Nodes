@@ -36,7 +36,7 @@ public class ResourceNodesEvents {
     public static void onPlayerClone(PlayerEvent.Clone event) {
         if (event.getEntity() instanceof ServerPlayer newPlayer && event.getOriginal() instanceof ServerPlayer oldPlayer) {
             // Copy data from old player to new player
-            // In 1.21 attachments might handle this automatically if configured, but let's be safe
+            // Attachments may handle this automatically if configured, but this keeps behavior explicit.
             oldPlayer.getData(ResourceNodes.SCANNER_DATA); // ensure loaded
             ScannerUnlockData oldData = oldPlayer.getData(ResourceNodes.SCANNER_DATA);
             ScannerUnlockData newData = newPlayer.getData(ResourceNodes.SCANNER_DATA);
