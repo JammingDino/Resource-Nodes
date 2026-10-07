@@ -1,6 +1,6 @@
 {
   "type": "forge:add_features",
-  "biomes": ["#minecraft:is_overworld", "#minecraft:is_nether"],
+  "biomes": "#minecraft:is_nether",
   "features": "jd_resource_nodes:ore_to_node",
   "step": "top_layer_modification"
 }
