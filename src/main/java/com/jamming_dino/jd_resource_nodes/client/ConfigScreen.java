@@ -31,6 +31,14 @@ public class ConfigScreen extends Screen {
     private int tempScannerRadius;
     private int tempRegenerateTicks; // Single value
     private boolean tempTextEnabled;
+    private boolean tempOreReplacement;
+    private final int[] tempOreInts = new int[4]; // chance, impure, normal, pure
+
+    private CycleButton<Boolean> oreReplacementButton;
+    private final EditBox[] oreFields = new EditBox[4];
+    private static final String[] ORE_LABELS = {
+            "Ore Replacement Chance (1 in N):", "Impure Weight:", "Normal Weight:", "Pure Weight:"
+    };
 
     // Scroll variables
     private double scrollAmount = 0;
@@ -47,6 +55,9 @@ public class ConfigScreen extends Screen {
         this.tempScannerRadius = ResourceNodesConfig.getScannerRadius();
         this.tempRegenerateTicks = ResourceNodesConfig.getRegenerateTicks(); // Load single value
         this.tempTextEnabled = ResourceNodesConfig.isTextEnabled();
+        this.tempOreReplacement = ResourceNodesConfig.isOreReplacementEnabled();
+        this.tempOreInts[0] = ResourceNodesConfig.getOreReplacementChance();
+        System.arraycopy(ResourceNodesConfig.getTierWeights(), 0, tempOreInts, 1, 3);
     }
 
     private static String getModVersion() {
@@ -86,8 +97,27 @@ public class ConfigScreen extends Screen {
         regenerateTicksField.setResponder(this::onRegenerateTicksChanged);
         this.addRenderableWidget(regenerateTicksField);
 
-        // Calculate total content height (4 items)
-        this.contentHeight = 4 * ENTRY_HEIGHT;
+        oreReplacementButton = CycleButton.booleanBuilder(Component.literal("ON"), Component.literal("OFF"))
+                .withInitialValue(tempOreReplacement)
+                .create(0, 0, fieldWidth, fieldHeight, Component.literal("Replace Generated Ores: "), (button, value) -> tempOreReplacement = value);
+        this.addRenderableWidget(oreReplacementButton);
+
+        for (int i = 0; i < oreFields.length; i++) {
+            int index = i;
+            oreFields[i] = new EditBox(this.font, 0, 0, fieldWidth, fieldHeight, Component.literal(ORE_LABELS[i]));
+            oreFields[i].setValue(String.valueOf(tempOreInts[i]));
+            oreFields[i].setMaxLength(7);
+            oreFields[i].setResponder(value -> {
+                try {
+                    int parsed = Integer.parseInt(value);
+                    if (parsed >= (index == 0 ? 1 : 0)) tempOreInts[index] = parsed;
+                } catch (NumberFormatException ignored) {}
+            });
+            this.addRenderableWidget(oreFields[i]);
+        }
+
+        // Calculate total content height (9 items)
+        this.contentHeight = 9 * ENTRY_HEIGHT;
 
         // 2. Fixed Buttons
         saveButton = Button.builder(Component.literal("Save"), button -> saveAndClose())
@@ -124,6 +154,14 @@ public class ConfigScreen extends Screen {
 
         // 4. Regeneration Ticks
         regenerateTicksField.setPosition(centerX - fieldWidth / 2, currentY + 12);
+        currentY += ENTRY_HEIGHT;
+
+        // 5-9. Ore replacement
+        oreReplacementButton.setPosition(centerX - fieldWidth / 2, currentY + 12);
+        for (EditBox field : oreFields) {
+            currentY += ENTRY_HEIGHT;
+            field.setPosition(centerX - fieldWidth / 2, currentY + 12);
+        }
     }
 
     @Override
@@ -163,6 +201,7 @@ public class ConfigScreen extends Screen {
         ResourceNodesConfig.setTextScale(tempTextScale);
         ResourceNodesConfig.setScannerRadius(tempScannerRadius);
         ResourceNodesConfig.setRegenerateTicks(tempRegenerateTicks);
+        ResourceNodesConfig.setOreReplacement(tempOreReplacement, tempOreInts[0], tempOreInts[1], tempOreInts[2], tempOreInts[3]);
         this.minecraft.setScreen(parent);
     }
 
@@ -191,6 +230,13 @@ public class ConfigScreen extends Screen {
 
         // 4. Regeneration Ticks
         graphics.drawString(this.font, "Regeneration Ticks (All Tiers):", centerX - fieldWidth / 2, currentY, 0xAAAAAA);
+        currentY += ENTRY_HEIGHT;
+
+        // 5-9. Ore replacement (applies to newly generated chunks)
+        for (String label : ORE_LABELS) {
+            currentY += ENTRY_HEIGHT;
+            graphics.drawString(this.font, label, centerX - fieldWidth / 2, currentY, 0xAAAAAA);
+        }
 
         graphics.disableScissor();
 

@@ -5,7 +5,9 @@ import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import com.jamming_dino.jd_resource_nodes.item.CustomNodeBlockItem;
 import com.jamming_dino.jd_resource_nodes.item.NodeConfiguratorItem;
 import com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler;
+import com.jamming_dino.jd_resource_nodes.world.OreToNodeFeature;
 import com.mojang.logging.LogUtils;
+import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -38,6 +40,8 @@ public class ResourceNodes {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(ForgeRegistries.FEATURES, MODID);
+    public static final RegistryObject<OreToNodeFeature> ORE_TO_NODE = FEATURES.register("ore_to_node", OreToNodeFeature::new);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
     // --- Storage for DataGen and Logic ---
@@ -136,6 +140,7 @@ public class ResourceNodes {
         ITEMS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+        FEATURES.register(modEventBus);
 
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);
