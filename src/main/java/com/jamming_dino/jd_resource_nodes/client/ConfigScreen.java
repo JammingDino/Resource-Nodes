@@ -35,6 +35,8 @@ public class ConfigScreen extends Screen {
     private final int[] tempOreInts = new int[4]; // chance, impure, normal, pure
 
     private CycleButton<Boolean> oreReplacementButton;
+    private CycleButton<Boolean> silkTouchButton;
+    private boolean tempSilkTouch;
     private final EditBox[] oreFields = new EditBox[4];
     private static final String[] ORE_LABELS = {
             "Ore Replacement Chance (1 in N):", "Impure Weight:", "Normal Weight:", "Pure Weight:"
@@ -56,6 +58,7 @@ public class ConfigScreen extends Screen {
         this.tempRegenerateTicks = ResourceNodesConfig.getRegenerateTicks(); // Load single value
         this.tempTextEnabled = ResourceNodesConfig.isTextEnabled();
         this.tempOreReplacement = ResourceNodesConfig.isOreReplacementEnabled();
+        this.tempSilkTouch = ResourceNodesConfig.isSilkTouchPickupEnabled();
         this.tempOreInts[0] = ResourceNodesConfig.getOreReplacementChance();
         System.arraycopy(ResourceNodesConfig.getTierWeights(), 0, tempOreInts, 1, 3);
     }
@@ -116,8 +119,13 @@ public class ConfigScreen extends Screen {
             this.addRenderableWidget(oreFields[i]);
         }
 
-        // Calculate total content height (9 items)
-        this.contentHeight = 9 * ENTRY_HEIGHT;
+        silkTouchButton = CycleButton.booleanBuilder(Component.literal("ON"), Component.literal("OFF"))
+                .withInitialValue(tempSilkTouch)
+                .create(0, 0, fieldWidth, fieldHeight, Component.literal("Silk Touch Pickup: "), (button, value) -> tempSilkTouch = value);
+        this.addRenderableWidget(silkTouchButton);
+
+        // Calculate total content height (10 items)
+        this.contentHeight = 10 * ENTRY_HEIGHT;
 
         // 2. Fixed Buttons
         saveButton = Button.builder(Component.literal("Save"), button -> saveAndClose())
@@ -162,6 +170,10 @@ public class ConfigScreen extends Screen {
             currentY += ENTRY_HEIGHT;
             field.setPosition(centerX - fieldWidth / 2, currentY + 12);
         }
+        currentY += ENTRY_HEIGHT;
+
+        // 10. Silk Touch pickup
+        silkTouchButton.setPosition(centerX - fieldWidth / 2, currentY + 12);
     }
 
     @Override
@@ -201,6 +213,7 @@ public class ConfigScreen extends Screen {
         ResourceNodesConfig.setTextScale(tempTextScale);
         ResourceNodesConfig.setScannerRadius(tempScannerRadius);
         ResourceNodesConfig.setRegenerateTicks(tempRegenerateTicks);
+        ResourceNodesConfig.setSilkTouchPickup(tempSilkTouch);
         ResourceNodesConfig.setOreReplacement(tempOreReplacement, tempOreInts[0], tempOreInts[1], tempOreInts[2], tempOreInts[3]);
         this.minecraft.setScreen(parent);
     }

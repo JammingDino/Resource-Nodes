@@ -25,6 +25,9 @@ public class ResourceNodesConfig {
 
     // Pinger display settings
     public boolean text_enabled = true;
+
+    // Silk Touch picks a node up as an item (lets players move nodes, including natural ones).
+    public boolean silk_touch_pickup = true;
     public float text_scale = 1.0f;
 
     // Scanner settings
@@ -45,6 +48,15 @@ public class ResourceNodesConfig {
 
     public static int getRegenerateTicks() {
         return INSTANCE.regeneration_ticks;
+    }
+
+    public static boolean isSilkTouchPickupEnabled() {
+        return INSTANCE.silk_touch_pickup;
+    }
+
+    public static void setSilkTouchPickup(boolean enabled) {
+        INSTANCE.silk_touch_pickup = enabled;
+        save();
     }
 
     public static boolean isTextEnabled() {
