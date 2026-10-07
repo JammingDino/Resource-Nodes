@@ -6,7 +6,7 @@ import net.minecraft.client.KeyMapping;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.lwjgl.glfw.GLFW;
 
-// Annotation removed to avoid deprecation warnings. Registered in main class instead.
+// Registered from ResourceNodesClient so dedicated servers never load this class.
 public class ResourceNodesKeys {
 
     public static final KeyMapping PING_KEY = new KeyMapping(

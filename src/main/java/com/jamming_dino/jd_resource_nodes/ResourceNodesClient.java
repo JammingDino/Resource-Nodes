@@ -3,6 +3,8 @@ package com.jamming_dino.jd_resource_nodes;
 import com.jamming_dino.jd_resource_nodes.client.ConfigScreen;
 import com.jamming_dino.jd_resource_nodes.client.CustomNodeItemRenderer;
 import com.jamming_dino.jd_resource_nodes.client.ResourceNodeRenderer;
+import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.Item;
 import net.neoforged.api.distmarker.Dist;
@@ -34,6 +36,11 @@ public class ResourceNodesClient {
         // Some client setup code
         ResourceNodes.LOGGER.info("HELLO FROM CLIENT SETUP");
         ResourceNodes.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+    }
+
+    @SubscribeEvent
+    static void onRegisterKeys(RegisterKeyMappingsEvent event) {
+        ResourceNodesKeys.registerKeys(event);
     }
 
     @SubscribeEvent

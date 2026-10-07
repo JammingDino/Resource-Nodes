@@ -2,7 +2,6 @@ package com.jamming_dino.jd_resource_nodes;
 
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
-import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.jamming_dino.jd_resource_nodes.item.CustomNodeBlockItem;
 import com.jamming_dino.jd_resource_nodes.item.NodeConfiguratorItem;
@@ -166,7 +165,6 @@ public class ResourceNodes {
 
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);
-        modEventBus.addListener(ResourceNodesKeys::registerKeys);
 
         // Register Packet Handler
         modEventBus.addListener(com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler::register);

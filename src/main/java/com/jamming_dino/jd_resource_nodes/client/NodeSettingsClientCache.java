@@ -1,5 +1,9 @@
 package com.jamming_dino.jd_resource_nodes.client;
 
+import com.jamming_dino.jd_resource_nodes.ResourceNodes;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +19,13 @@ public class NodeSettingsClientCache {
     public static void update(Set<String> globalIds, Set<String> worldIds) {
         disabledGlobal = new HashSet<>(globalIds);
         disabledWorld = new HashSet<>(worldIds);
+    }
+
+    public static void updateScannerUnlocks(Set<String> unlocks) {
+        Player player = Minecraft.getInstance().player;
+        if (player != null) {
+            player.getData(ResourceNodes.SCANNER_DATA).setUnlockedCategories(unlocks);
+        }
     }
 
     public static void updateCustomNodeIds(Set<String> ids) {

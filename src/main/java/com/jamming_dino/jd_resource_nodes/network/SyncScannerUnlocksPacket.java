@@ -1,8 +1,7 @@
 package com.jamming_dino.jd_resource_nodes.network;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
-import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
-import net.minecraft.client.Minecraft;
+import com.jamming_dino.jd_resource_nodes.client.NodeSettingsClientCache;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs; // Import
 import net.minecraft.network.codec.StreamCodec;
@@ -30,15 +29,7 @@ public record SyncScannerUnlocksPacket(Set<String> unlocks) implements CustomPac
     }
 
     public static void handle(SyncScannerUnlocksPacket payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            // Client side handling
-            if (context.flow().isClientbound()) {
-                net.minecraft.world.entity.player.Player player = Minecraft.getInstance().player;
-                if (player != null) {
-                    ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
-                    data.setUnlockedCategories(payload.unlocks);
-                }
-            }
-        });
+        // Client classes stay in NodeSettingsClientCache so dedicated servers never load them.
+        context.enqueueWork(() -> NodeSettingsClientCache.updateScannerUnlocks(payload.unlocks()));
     }
 }
