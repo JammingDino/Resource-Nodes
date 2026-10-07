@@ -19,13 +19,19 @@
 
 ## How It Works
 
-**_Theses node do not spawn naturally, and are currently designed for map oriented play. A recipie could also be added via craft tweaker for use within modpacks._**
+Nodes generate naturally: in new chunks, about 1 in every 1000 vanilla ores (Overworld and Nether) is replaced by a node of a random purity. Map and pack makers can also place them by hand.
 
 ### Permanent Infrastructure
-In Survival Mode, Resource Nodes are designed to be **permanent infrastructure**.
-*   **Immovable:** Nodes cannot be moved by Pistons or picked up (even with Silk Touch).
-*   **Indestructible:** Nodes cannot be destroyed by players in Survival mode or by explosions.
-*   **Removal:** The only way to remove a node is to break it in **Creative Mode**.
+Resource Nodes are designed to be **permanent infrastructure**.
+*   **Immovable:** Nodes cannot be moved by Pistons.
+*   **Explosion-proof:** Explosions do not destroy nodes.
+*   **Normal mining** collects the drops and leaves the node to regenerate; it is never destroyed.
+
+### Removing a Node in Survival
+If a node spawned somewhere you don't want it:
+*   **Sneak + mine** it to remove it for good. It drops one of its resource (e.g. 1 Raw Iron), not the node.
+*   **Silk Touch** picks the node up as an item so you can place it elsewhere.
+*   In **Creative Mode**, breaking a node removes it.
 
 ### Mining & Regeneration
 When you mine a Resource Node, it drops its standard loot (e.g., Raw Iron) and turns into its base block (e.g., Stone).
@@ -50,11 +56,13 @@ If you need to mass-remove nodes using WorldEdit or Commands (since they resist 
 
 ## Configuration
 
-The regeneration speeds can be adjusted in `config/jd_resource_nodes.json`.
-*Defaults:*
-*   **Impure:** 1200 ticks (60 seconds)
-*   **Normal:** 600 ticks (30 seconds)
-*   **Pure:** 200 ticks (10 seconds)
+Settings live in `config/jd_resource_nodes.json` and the in-game config screen.
+*   **`regeneration_ticks`** (default `600`, 30 seconds): regeneration time for every node. Purity sets the drop amount instead: Impure 1, Normal 2, Pure 4.
+*   **`ore_replacement_enabled`** (default `true`): turn natural node generation on or off.
+*   **`ore_replacement_chance`** (default `1000`): 1 in this many ores becomes a node.
+*   **`impure_weight` / `normal_weight` / `pure_weight`** (defaults `60` / `30` / `10`): how common each purity is. These are relative weights; `0` disables a purity.
+
+Ore replacement only affects chunks generated after the mod is installed.
 
 ## Installation
 
