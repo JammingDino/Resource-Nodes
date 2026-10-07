@@ -3,8 +3,8 @@ package com.jamming_dino.jd_resource_nodes.datagen;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import net.minecraft.data.PackOutput;
-import net.neoforged.neoforge.common.data.LanguageProvider;
-import net.neoforged.neoforge.registries.DeferredBlock;
+import net.minecraftforge.common.data.LanguageProvider;
+import net.minecraftforge.registries.RegistryObject;
 
 public class ResourceNodesLangProvider extends LanguageProvider {
     public ResourceNodesLangProvider(PackOutput output, String locale) {
@@ -28,7 +28,7 @@ public class ResourceNodesLangProvider extends LanguageProvider {
         add("item.jd_resource_nodes.purity.normal", "Normal");
         add("item.jd_resource_nodes.purity.pure", "Pure");
 
-        for (DeferredBlock<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
+        for (RegistryObject<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
             String path = holder.getId().getPath();
             add(holder.get(), generateDisplayName(path));
         }

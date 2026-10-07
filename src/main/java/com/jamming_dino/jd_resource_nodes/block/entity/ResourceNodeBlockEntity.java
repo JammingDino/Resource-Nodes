@@ -3,7 +3,6 @@ package com.jamming_dino.jd_resource_nodes.block.entity;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -49,16 +48,16 @@ public class ResourceNodeBlockEntity extends BlockEntity {
 
     // Persist timer state
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         tag.putInt("Timer", timer);
         // We don't save permanentlyRemoved because it's transient logic for breaking
     }
 
     // readNbt -> loadAdditional
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         this.timer = tag.getInt("Timer");
     }
 }

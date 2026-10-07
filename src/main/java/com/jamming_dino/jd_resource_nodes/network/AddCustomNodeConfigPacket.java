@@ -2,41 +2,37 @@ package com.jamming_dino.jd_resource_nodes.network;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.ResourceNodesConfig;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
 
-public record AddCustomNodeConfigPacket(String id, String purityMode, String originalBlockId, String regeneratingBlockId, String outputItemId) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<AddCustomNodeConfigPacket> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(ResourceNodes.MODID, "add_custom_node_config"));
+import java.util.function.Supplier;
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, AddCustomNodeConfigPacket> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8,
-            AddCustomNodeConfigPacket::id,
-            ByteBufCodecs.STRING_UTF8,
-            AddCustomNodeConfigPacket::purityMode,
-            ByteBufCodecs.STRING_UTF8,
-            AddCustomNodeConfigPacket::originalBlockId,
-            ByteBufCodecs.STRING_UTF8,
-            AddCustomNodeConfigPacket::regeneratingBlockId,
-            ByteBufCodecs.STRING_UTF8,
-            AddCustomNodeConfigPacket::outputItemId,
-            AddCustomNodeConfigPacket::new
-    );
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+public record AddCustomNodeConfigPacket(String id, String purityMode, String originalBlockId, String regeneratingBlockId, String outputItemId) {
+    public static AddCustomNodeConfigPacket decode(FriendlyByteBuf buffer) {
+        return new AddCustomNodeConfigPacket(
+                buffer.readUtf(),
+                buffer.readUtf(),
+                buffer.readUtf(),
+                buffer.readUtf(),
+                buffer.readUtf()
+        );
     }
 
-    public static void handle(AddCustomNodeConfigPacket payload, IPayloadContext context) {
+    public static void encode(AddCustomNodeConfigPacket packet, FriendlyByteBuf buffer) {
+        buffer.writeUtf(packet.id());
+        buffer.writeUtf(packet.purityMode());
+        buffer.writeUtf(packet.originalBlockId());
+        buffer.writeUtf(packet.regeneratingBlockId());
+        buffer.writeUtf(packet.outputItemId());
+    }
+
+    public static void handle(AddCustomNodeConfigPacket payload, Supplier<NetworkEvent.Context> contextSupplier) {
+        NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)) {
+            ServerPlayer player = context.getSender();
+            if (player == null) {
                 return;
             }
 
@@ -68,6 +64,7 @@ public record AddCustomNodeConfigPacket(String id, String purityMode, String ori
             player.displayClientMessage(Component.literal("Custom node saved. It should appear in node list now; restart required for Creative tab registration."), false);
             NodeSettingsNetworkSync.syncTo(player);
         });
+        context.setPacketHandled(true);
     }
 }
 

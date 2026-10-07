@@ -9,9 +9,9 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey; // Import this
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.common.data.BlockTagsProvider;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.registries.DeferredBlock;
+import net.minecraftforge.common.data.BlockTagsProvider;
+import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 public class ResourceNodesBlockTagsProvider extends BlockTagsProvider {
 
     // Define the Create Mod Tag manually (since we don't depend on Create at compile time)
-    public static final TagKey<Block> CREATE_NON_MOVABLE = BlockTags.create(ResourceLocation.fromNamespaceAndPath("create", "non_movable"));
+    public static final TagKey<Block> CREATE_NON_MOVABLE = BlockTags.create(new ResourceLocation("create", "non_movable"));
 
     public ResourceNodesBlockTagsProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> lookupProvider, @Nullable ExistingFileHelper existingFileHelper) {
         super(output, lookupProvider, ResourceNodes.MODID, existingFileHelper);
@@ -27,7 +27,7 @@ public class ResourceNodesBlockTagsProvider extends BlockTagsProvider {
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
-        for (DeferredBlock<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
+        for (RegistryObject<ResourceNodeBlock> holder : ResourceNodes.REGISTERED_NODES) {
             ResourceNodeBlock block = holder.get();
             Block original = block.getOriginalOre();
 

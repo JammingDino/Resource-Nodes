@@ -7,7 +7,6 @@ import com.jamming_dino.jd_resource_nodes.world.NodeWorldSettingsSavedData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,12 +16,12 @@ public class NodeSettingsNetworkSync {
     }
 
     public static void syncTo(ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, new SyncNodeSettingsPacket(
+        ResourceNodesPacketHandler.sendToPlayer(player, new SyncNodeSettingsPacket(
                 new HashSet<>(ResourceNodesConfig.getDisabledNodesGlobal()),
                 NodeWorldSettingsSavedData.get(player.serverLevel()).getDisabledNodes()
         ));
 
-        PacketDistributor.sendToPlayer(player, new SyncCustomNodeIdsPacket(buildCustomNodeIds()));
+        ResourceNodesPacketHandler.sendToPlayer(player, new SyncCustomNodeIdsPacket(buildCustomNodeIds()));
     }
 
     private static Set<String> buildCustomNodeIds() {
@@ -36,7 +35,7 @@ public class NodeSettingsNetworkSync {
 
             CustomNodePurityMode purityMode = CustomNodePurityMode.fromId(custom.purity_mode);
             for (ResourceNodeTier tier : purityMode.getTiers()) {
-                ResourceLocation blockId = ResourceLocation.fromNamespaceAndPath("jd_resource_nodes", "node_custom_" + baseId + "_" + tier.getSerializedName());
+                ResourceLocation blockId = new ResourceLocation("jd_resource_nodes", "node_custom_" + baseId + "_" + tier.getSerializedName());
                 if (BuiltInRegistries.BLOCK.containsKey(blockId)) {
                     ids.add(blockId.toString());
                 }

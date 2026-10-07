@@ -4,6 +4,7 @@ import com.jamming_dino.jd_resource_nodes.CustomNodePurityMode;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.network.AddCustomNodeConfigPacket;
 import com.jamming_dino.jd_resource_nodes.network.RequestNodeSettingsPacket;
+import com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler;
 import com.jamming_dino.jd_resource_nodes.network.UpdateNodeTogglePacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -11,8 +12,7 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.registries.DeferredBlock;
+import net.minecraftforge.registries.RegistryObject;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,7 +48,7 @@ public class NodeManagerScreen extends Screen {
 
     @Override
     protected void init() {
-        PacketDistributor.sendToServer(RequestNodeSettingsPacket.INSTANCE);
+        ResourceNodesPacketHandler.sendToServer(RequestNodeSettingsPacket.INSTANCE);
         rebuildNodeIds();
         lastNodeHash = computeNodeHash();
 
@@ -106,7 +106,7 @@ public class NodeManagerScreen extends Screen {
 
     private void rebuildNodeIds() {
         List<String> builtin = new ArrayList<>();
-        for (DeferredBlock<?> holder : ResourceNodes.REGISTERED_NODES) {
+        for (RegistryObject<?> holder : ResourceNodes.REGISTERED_NODES) {
             builtin.add(holder.getId().toString());
         }
 
@@ -146,8 +146,8 @@ public class NodeManagerScreen extends Screen {
     }
 
     private void sendToggle(String blockId, boolean enabled) {
-        PacketDistributor.sendToServer(new UpdateNodeTogglePacket(blockId, enabled));
-        PacketDistributor.sendToServer(RequestNodeSettingsPacket.INSTANCE);
+        ResourceNodesPacketHandler.sendToServer(new UpdateNodeTogglePacket(blockId, enabled));
+        ResourceNodesPacketHandler.sendToServer(RequestNodeSettingsPacket.INSTANCE);
     }
 
     private String trimId(String id, int max) {
@@ -166,7 +166,7 @@ public class NodeManagerScreen extends Screen {
 
         String id = buildCustomId();
 
-        PacketDistributor.sendToServer(new AddCustomNodeConfigPacket(
+        ResourceNodesPacketHandler.sendToServer(new AddCustomNodeConfigPacket(
                 id,
                 selectedPurity.getId(),
                 selectedOriginalBlock,
@@ -195,7 +195,7 @@ public class NodeManagerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderBackground(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         int centerX = this.width / 2;
@@ -211,7 +211,7 @@ public class NodeManagerScreen extends Screen {
 
     private class NodeToggleList extends ObjectSelectionList<NodeEntry> {
         public NodeToggleList(net.minecraft.client.Minecraft minecraft, int width, int height, int top, int itemHeight) {
-            super(minecraft, width, height, top, itemHeight);
+            super(minecraft, width, height, top, listBottom, itemHeight);
         }
 
         public void rebuildEntries(List<String> ids) {

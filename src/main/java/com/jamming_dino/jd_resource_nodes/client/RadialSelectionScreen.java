@@ -37,7 +37,7 @@ public class RadialSelectionScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics) {
         // Override to prevent default background rendering (which includes blur)
         // We'll draw our own semi-transparent background in render()
     }
@@ -150,7 +150,7 @@ public class RadialSelectionScreen extends Screen {
 
 
     private void drawCircle(GuiGraphics graphics, int centerX, int centerY, int radius, int color) {
-        ResourceLocation CIRCLE_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+        ResourceLocation CIRCLE_TEXTURE = new ResourceLocation(
                 "jd_resource_nodes",
                 "textures/gui/circle.png"
         );

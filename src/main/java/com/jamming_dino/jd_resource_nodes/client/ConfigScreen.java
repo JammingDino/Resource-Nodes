@@ -2,7 +2,6 @@ package com.jamming_dino.jd_resource_nodes.client;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.ResourceNodesConfig;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -10,7 +9,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 
 public class ConfigScreen extends Screen {
     private final Screen parent;
@@ -128,14 +127,14 @@ public class ConfigScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (scrollY != 0) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (delta != 0) {
             int maxScroll = Math.max(0, contentHeight - (this.height - HEADER_HEIGHT - FOOTER_HEIGHT));
-            this.scrollAmount = Mth.clamp(this.scrollAmount - scrollY * 20, 0, maxScroll);
+            this.scrollAmount = Mth.clamp(this.scrollAmount - delta * 20, 0, maxScroll);
             updateWidgetPositions();
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     private void onTextScaleChanged(String value) {
@@ -169,7 +168,7 @@ public class ConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        this.renderBackground(graphics);
 
         graphics.enableScissor(0, HEADER_HEIGHT, this.width, this.height - FOOTER_HEIGHT);
         super.render(graphics, mouseX, mouseY, partialTick);

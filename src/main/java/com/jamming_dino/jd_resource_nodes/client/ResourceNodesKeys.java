@@ -3,7 +3,7 @@ package com.jamming_dino.jd_resource_nodes.client;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import org.lwjgl.glfw.GLFW;
 
 // Annotation removed to avoid deprecation warnings. Registered in main class instead.

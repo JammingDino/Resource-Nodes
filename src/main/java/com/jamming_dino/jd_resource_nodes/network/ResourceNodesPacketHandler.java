@@ -1,54 +1,83 @@
 package com.jamming_dino.jd_resource_nodes.network;
 
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 public class ResourceNodesPacketHandler {
-    public static void register(RegisterPayloadHandlersEvent event) {
-        final PayloadRegistrar registrar = event.registrar(ResourceNodes.MODID)
-                .versioned("1.0.0");
+    private static final String PROTOCOL = "1";
 
-        registrar.playToServer(
-                RequestNodeSettingsPacket.TYPE,
-                RequestNodeSettingsPacket.STREAM_CODEC,
-                RequestNodeSettingsPacket::handle
-        );
+    public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
+            .named(new ResourceLocation(ResourceNodes.MODID, "main"))
+            .networkProtocolVersion(() -> PROTOCOL)
+            .clientAcceptedVersions(PROTOCOL::equals)
+            .serverAcceptedVersions(PROTOCOL::equals)
+            .simpleChannel();
 
-        registrar.playToServer(
-                UpdateNodeTogglePacket.TYPE,
-                UpdateNodeTogglePacket.STREAM_CODEC,
-                UpdateNodeTogglePacket::handle
-        );
+    private static int packetId;
 
-        registrar.playToServer(
-                AddCustomNodeConfigPacket.TYPE,
-                AddCustomNodeConfigPacket.STREAM_CODEC,
-                AddCustomNodeConfigPacket::handle
-        );
+    private ResourceNodesPacketHandler() {
+    }
 
-        registrar.playToClient(
-                SyncScannerUnlocksPacket.TYPE,
-                SyncScannerUnlocksPacket.STREAM_CODEC,
-                SyncScannerUnlocksPacket::handle
-        );
+    public static void register() {
+        packetId = 0;
 
-        registrar.playToClient(
-                SyncNodeSettingsPacket.TYPE,
-                SyncNodeSettingsPacket.STREAM_CODEC,
-                SyncNodeSettingsPacket::handle
-        );
+        CHANNEL.messageBuilder(RequestNodeSettingsPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RequestNodeSettingsPacket::encode)
+                .decoder(RequestNodeSettingsPacket::decode)
+                .consumerMainThread(RequestNodeSettingsPacket::handle)
+                .add();
 
-        registrar.playToClient(
-                SyncCustomNodeIdsPacket.TYPE,
-                SyncCustomNodeIdsPacket.STREAM_CODEC,
-                SyncCustomNodeIdsPacket::handle
-        );
+        CHANNEL.messageBuilder(UpdateNodeTogglePacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .encoder(UpdateNodeTogglePacket::encode)
+                .decoder(UpdateNodeTogglePacket::decode)
+                .consumerMainThread(UpdateNodeTogglePacket::handle)
+                .add();
 
-        registrar.playToClient(
-                OpenNodeManagerScreenPacket.TYPE,
-                OpenNodeManagerScreenPacket.STREAM_CODEC,
-                OpenNodeManagerScreenPacket::handle
-        );
+        CHANNEL.messageBuilder(AddCustomNodeConfigPacket.class, nextId(), NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AddCustomNodeConfigPacket::encode)
+                .decoder(AddCustomNodeConfigPacket::decode)
+                .consumerMainThread(AddCustomNodeConfigPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(SyncScannerUnlocksPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SyncScannerUnlocksPacket::encode)
+                .decoder(SyncScannerUnlocksPacket::decode)
+                .consumerMainThread(SyncScannerUnlocksPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(SyncNodeSettingsPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SyncNodeSettingsPacket::encode)
+                .decoder(SyncNodeSettingsPacket::decode)
+                .consumerMainThread(SyncNodeSettingsPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(SyncCustomNodeIdsPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SyncCustomNodeIdsPacket::encode)
+                .decoder(SyncCustomNodeIdsPacket::decode)
+                .consumerMainThread(SyncCustomNodeIdsPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(OpenNodeManagerScreenPacket.class, nextId(), NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OpenNodeManagerScreenPacket::encode)
+                .decoder(OpenNodeManagerScreenPacket::decode)
+                .consumerMainThread(OpenNodeManagerScreenPacket::handle)
+                .add();
+    }
+
+    public static void sendToServer(Object message) {
+        CHANNEL.sendToServer(message);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, Object message) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), message);
+    }
+
+    private static int nextId() {
+        return packetId++;
     }
 }

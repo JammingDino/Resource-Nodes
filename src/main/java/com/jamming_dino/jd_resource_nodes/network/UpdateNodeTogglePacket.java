@@ -1,36 +1,28 @@
 package com.jamming_dino.jd_resource_nodes.network;
 
-import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.ResourceNodesConfig;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
 
-public record UpdateNodeTogglePacket(String blockId, boolean enabled) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<UpdateNodeTogglePacket> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(ResourceNodes.MODID, "update_node_toggle"));
+import java.util.function.Supplier;
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, UpdateNodeTogglePacket> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8,
-            UpdateNodeTogglePacket::blockId,
-            ByteBufCodecs.BOOL,
-            UpdateNodeTogglePacket::enabled,
-            UpdateNodeTogglePacket::new
-    );
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+public record UpdateNodeTogglePacket(String blockId, boolean enabled) {
+    public static UpdateNodeTogglePacket decode(FriendlyByteBuf buffer) {
+        return new UpdateNodeTogglePacket(buffer.readUtf(), buffer.readBoolean());
     }
 
-    public static void handle(UpdateNodeTogglePacket payload, IPayloadContext context) {
+    public static void encode(UpdateNodeTogglePacket packet, FriendlyByteBuf buffer) {
+        buffer.writeUtf(packet.blockId());
+        buffer.writeBoolean(packet.enabled());
+    }
+
+    public static void handle(UpdateNodeTogglePacket payload, Supplier<NetworkEvent.Context> contextSupplier) {
+        NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)) {
+            ServerPlayer player = context.getSender();
+            if (player == null) {
                 return;
             }
 
@@ -45,6 +37,7 @@ public record UpdateNodeTogglePacket(String blockId, boolean enabled) implements
 
             NodeSettingsNetworkSync.syncTo(player);
         });
+        context.setPacketHandled(true);
     }
 }
 

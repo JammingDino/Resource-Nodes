@@ -1,8 +1,6 @@
 {
-  "parent": "jd_resource_nodes:block/node_layered_cube",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "base": "minecraft:block/deepslate_diamond_ore",
-    "overlay": "jd_resource_nodes:block/input/border_pure",
-    "particle": "minecraft:block/deepslate_diamond_ore"
+    "all": "jd_resource_nodes:block/node_deepslate_diamond_pure"
   }
 }

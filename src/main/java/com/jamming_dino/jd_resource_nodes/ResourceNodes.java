@@ -2,15 +2,12 @@ package com.jamming_dino.jd_resource_nodes;
 
 import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
-import com.jamming_dino.jd_resource_nodes.client.ResourceNodesKeys;
-import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.jamming_dino.jd_resource_nodes.item.CustomNodeBlockItem;
 import com.jamming_dino.jd_resource_nodes.item.NodeConfiguratorItem;
+import com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler;
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.*;
@@ -18,18 +15,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.attachment.AttachmentType;
-import net.neoforged.neoforge.attachment.IAttachmentSerializer;
-import net.neoforged.neoforge.attachment.IAttachmentHolder; // ADDED THIS IMPORT
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 import com.jamming_dino.jd_resource_nodes.datagen.ResourceNodesDataGen;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -42,23 +35,22 @@ public class ResourceNodes {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     // --- Registries ---
-    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
-    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
+    public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-    public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MODID);
 
     // --- Storage for DataGen and Logic ---
-    public static final List<DeferredBlock<ResourceNodeBlock>> REGISTERED_NODES = new ArrayList<>();
+    public static final List<RegistryObject<ResourceNodeBlock>> REGISTERED_NODES = new ArrayList<>();
 
     // Storage for linking categories to deferred blocks (resolved later)
     private static final List<CategoryRegistration> PENDING_CATEGORY_REGISTRATIONS = new ArrayList<>();
 
     private static class CategoryRegistration {
         final String category;
-        final DeferredBlock<ResourceNodeBlock> block;
+        final RegistryObject<ResourceNodeBlock> block;
 
-        CategoryRegistration(String category, DeferredBlock<ResourceNodeBlock> block) {
+        CategoryRegistration(String category, RegistryObject<ResourceNodeBlock> block) {
             this.category = category;
             this.block = block;
         }
@@ -106,82 +98,60 @@ public class ResourceNodes {
         registerNodeSet("ancient_debris", Blocks.ANCIENT_DEBRIS, Blocks.NETHERRACK, Items.NETHERITE_SCRAP, "ancient_debris");
     }
 
-    // --- Attachment Registration ---
-    public static final DeferredHolder<AttachmentType<?>, AttachmentType<ScannerUnlockData>> SCANNER_DATA = ATTACHMENT_TYPES.register(
-            "scanner_data", () -> AttachmentType.builder(ScannerUnlockData::new)
-                    .serialize(new IAttachmentSerializer<CompoundTag, ScannerUnlockData>() {
-                        // FIXED: Added IAttachmentHolder holder parameter
-                        @Override
-                        public ScannerUnlockData read(IAttachmentHolder holder, CompoundTag tag, HolderLookup.Provider provider) {
-                            ScannerUnlockData data = new ScannerUnlockData();
-                            data.deserializeNBT(provider, tag);
-                            return data;
-                        }
-
-                        @Override
-                        public @Nullable CompoundTag write(ScannerUnlockData data, HolderLookup.Provider provider) {
-                            return data.serializeNBT(provider);
-                        }
-                    })
-                    .build()
-    );
-
     // --- Block Entity Registration ---
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ResourceNodeBlockEntity>> RESOURCE_NODE_BE =
+    public static final RegistryObject<BlockEntityType<ResourceNodeBlockEntity>> RESOURCE_NODE_BE =
             BLOCK_ENTITIES.register("resource_node_be", () ->
                     BlockEntityType.Builder.of(
                             ResourceNodeBlockEntity::new,
-                            REGISTERED_NODES.stream().map(DeferredBlock::get).toArray(Block[]::new)
+                            REGISTERED_NODES.stream().map(RegistryObject::get).toArray(Block[]::new)
                     ).build(null)
             );
 
-    public static final DeferredItem<NodeConfiguratorItem> NODE_CONFIGURATOR = ITEMS.register("node_configurator",
+    public static final RegistryObject<NodeConfiguratorItem> NODE_CONFIGURATOR = ITEMS.register("node_configurator",
             () -> new NodeConfiguratorItem(new Item.Properties().stacksTo(1))
     );
 
     // --- Creative Tab ---
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = CREATIVE_MODE_TABS.register("general", () -> CreativeModeTab.builder()
+    public static final RegistryObject<CreativeModeTab> CREATIVE_TAB = CREATIVE_MODE_TABS.register("general", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + MODID + ".general"))
             .icon(() -> new ItemStack(Items.IRON_PICKAXE))
             .displayItems((parameters, output) -> {
                 // Automatically add every registered node item to the tab
-                for (DeferredBlock<ResourceNodeBlock> block : REGISTERED_NODES) {
-                    output.accept(block);
+                for (RegistryObject<ResourceNodeBlock> block : REGISTERED_NODES) {
+                    output.accept(block.get());
                 }
                 output.accept(NODE_CONFIGURATOR.get());
             })
             .build());
 
     // --- Constructor ---
-    public ResourceNodes(IEventBus modEventBus, net.neoforged.fml.ModContainer modContainer) {
+    public ResourceNodes() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
         ResourceNodesConfig.load();
         registerConfiguredCustomNodes();
-        LOGGER.info("Initializing Resource Nodes (NeoForge 1.20.1)...");
+        LOGGER.info("Initializing Resource Nodes (Forge 1.20.1)...");
 
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
-        ATTACHMENT_TYPES.register(modEventBus);
 
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);
-        modEventBus.addListener(ResourceNodesKeys::registerKeys);
+        modEventBus.addListener(this::onCommonSetup);
+    }
 
-        // Register Packet Handler
-        modEventBus.addListener(com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler::register);
-
-        // Link deferred blocks to categories after registration
-        modEventBus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) -> {
-            event.enqueueWork(() -> {
-                for (CategoryRegistration reg : PENDING_CATEGORY_REGISTRATIONS) {
-                    ResourceNodeData data = ResourceNodeData.getByCategory(reg.category);
-                    if (data != null) {
-                        data.addNode(reg.block.get());
-                    }
+    private void onCommonSetup(FMLCommonSetupEvent event) {
+        ResourceNodesPacketHandler.register();
+        event.enqueueWork(() -> {
+            for (CategoryRegistration reg : PENDING_CATEGORY_REGISTRATIONS) {
+                ResourceNodeData data = ResourceNodeData.getByCategory(reg.category);
+                if (data != null) {
+                    data.addNode(reg.block.get());
                 }
-                PENDING_CATEGORY_REGISTRATIONS.clear();
-            });
+            }
+            PENDING_CATEGORY_REGISTRATIONS.clear();
         });
     }
 
@@ -204,14 +174,14 @@ public class ResourceNodes {
         // Register all tiers for this node set
         for (ResourceNodeTier tier : ResourceNodeTier.values()) {
             String regName = "node_" + baseName + "_" + tier.getSerializedName();
-            DeferredBlock<ResourceNodeBlock> registeredBlock = registerNode(regName, originalOre, baseBlock, outputItem, categoryName, tier);
+            RegistryObject<ResourceNodeBlock> registeredBlock = registerNode(regName, originalOre, baseBlock, outputItem, categoryName, tier);
 
             // Store the category-block link for later resolution
             PENDING_CATEGORY_REGISTRATIONS.add(new CategoryRegistration(categoryName, registeredBlock));
         }
     }
 
-    private static DeferredBlock<ResourceNodeBlock> registerNode(String name, Block originalOre, Block baseBlock, Item outputItem, String overlaySource, ResourceNodeTier tier) {
+    private static RegistryObject<ResourceNodeBlock> registerNode(String name, Block originalOre, Block baseBlock, Item outputItem, String overlaySource, ResourceNodeTier tier) {
         // Create the Block Supplier
         Supplier<ResourceNodeBlock> blockSupplier = () -> new ResourceNodeBlock(
                 originalOre,
@@ -220,15 +190,15 @@ public class ResourceNodes {
                 BuiltInRegistries.ITEM.getKey(outputItem),
                 tier,
                 overlaySource,
-                BlockBehaviour.Properties.ofFullCopy(originalOre)
+                BlockBehaviour.Properties.copy(originalOre)
                         .lightLevel(state -> 0)
         );
 
         // Register Block
-        DeferredBlock<ResourceNodeBlock> registeredBlock = BLOCKS.register(name, blockSupplier);
+        RegistryObject<ResourceNodeBlock> registeredBlock = BLOCKS.register(name, blockSupplier);
 
         // Register BlockItem
-        DeferredItem<BlockItem> registeredItem = ITEMS.registerSimpleBlockItem(name, registeredBlock);
+        ITEMS.register(name, () -> new BlockItem(registeredBlock.get(), new Item.Properties()));
 
         // Add to our list for BE and DataGen
         REGISTERED_NODES.add(registeredBlock);
@@ -236,7 +206,7 @@ public class ResourceNodes {
         return registeredBlock;
     }
 
-    private static DeferredBlock<ResourceNodeBlock> registerCustomNode(String name, ResourceLocation readyBlockId, ResourceLocation baseBlockId, ResourceLocation outputItemId, String overlaySource, ResourceNodeTier tier) {
+    private static RegistryObject<ResourceNodeBlock> registerCustomNode(String name, ResourceLocation readyBlockId, ResourceLocation baseBlockId, ResourceLocation outputItemId, String overlaySource, ResourceNodeTier tier) {
         Supplier<ResourceNodeBlock> blockSupplier = () -> {
             Block resolvedReadyBlock = BuiltInRegistries.BLOCK.get(readyBlockId);
             Block resolvedBaseBlock = BuiltInRegistries.BLOCK.get(baseBlockId);
@@ -256,12 +226,12 @@ public class ResourceNodes {
                     outputItemId,
                     tier,
                     overlaySource,
-                    BlockBehaviour.Properties.ofFullCopy(propertySource)
+                    BlockBehaviour.Properties.copy(propertySource)
                             .lightLevel(state -> 0)
             );
         };
 
-        DeferredBlock<ResourceNodeBlock> registeredBlock = BLOCKS.register(name, blockSupplier);
+        RegistryObject<ResourceNodeBlock> registeredBlock = BLOCKS.register(name, blockSupplier);
         ITEMS.register(name, () -> new CustomNodeBlockItem(registeredBlock.get(), new Item.Properties()));
         REGISTERED_NODES.add(registeredBlock);
         return registeredBlock;
@@ -284,7 +254,7 @@ public class ResourceNodes {
 
             for (ResourceNodeTier tier : definition.purityMode().getTiers()) {
                 String regName = "node_custom_" + definition.id() + "_" + tier.getSerializedName();
-                DeferredBlock<ResourceNodeBlock> registeredBlock = registerCustomNode(
+                RegistryObject<ResourceNodeBlock> registeredBlock = registerCustomNode(
                         regName,
                         definition.readyBlockId(),
                         definition.regeneratingBlockId(),

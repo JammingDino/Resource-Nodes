@@ -11,6 +11,9 @@
   "block.jd_resource_nodes.node_custom_create_andesite_alloy_block_create_andesite_alloy_all_impure": "Node Custom Create Andesite Alloy Block Create Andesite Alloy All Impure",
   "block.jd_resource_nodes.node_custom_create_andesite_alloy_block_create_andesite_alloy_all_normal": "Node Custom Create Andesite Alloy Block Create Andesite Alloy All Normal",
   "block.jd_resource_nodes.node_custom_create_andesite_alloy_block_create_andesite_alloy_all_pure": "Node Custom Create Andesite Alloy Block Create Andesite Alloy All Pure",
+  "block.jd_resource_nodes.node_custom_create_brass_block_create_brass_ingot_all_impure": "Node Custom Create Brass Block Create Brass Ingot All Impure",
+  "block.jd_resource_nodes.node_custom_create_brass_block_create_brass_ingot_all_normal": "Node Custom Create Brass Block Create Brass Ingot All Normal",
+  "block.jd_resource_nodes.node_custom_create_brass_block_create_brass_ingot_all_pure": "Node Custom Create Brass Block Create Brass Ingot All Pure",
   "block.jd_resource_nodes.node_deepslate_coal_impure": "Node Deepslate Coal Impure",
   "block.jd_resource_nodes.node_deepslate_coal_normal": "Node Deepslate Coal Normal",
   "block.jd_resource_nodes.node_deepslate_coal_pure": "Node Deepslate Coal Pure",
@@ -68,7 +71,6 @@
   "item.jd_resource_nodes.purity.impure": "Impure",
   "item.jd_resource_nodes.purity.normal": "Normal",
   "item.jd_resource_nodes.purity.pure": "Pure",
-  "item.jd_resource_nodes.node_configurator": "Node Configurator",
   "itemGroup.jd_resource_nodes.general": "Resource Nodes",
   "key.categories.jd_resource_nodes": "Resource Nodes",
   "key.jd_resource_nodes.ping": "Resource Node Scan"

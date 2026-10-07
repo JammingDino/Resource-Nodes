@@ -114,19 +114,19 @@ public class RegistryPickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (scrollY > 0 && scrollRow > 0) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (delta > 0 && scrollRow > 0) {
             scrollRow--;
             return true;
         }
 
         int maxRows = Math.max(0, (filteredOptions.size() - 1) / columns - (visibleRows - 1));
-        if (scrollY < 0 && scrollRow < maxRows) {
+        if (delta < 0 && scrollRow < maxRows) {
             scrollRow++;
             return true;
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class RegistryPickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderBackground(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFFFFF);

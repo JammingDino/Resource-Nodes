@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.120'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.120'
     id 'idea'
 }
 
@@ -28,14 +28,12 @@ base {
 // Minecraft 1.20.1 uses Java 17, so mods should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-neoForge {
-    // Specify the version of NeoForge to use.
-    version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
+legacyForge {
+    // Configure NeoForged's legacy 1.20.1 line (published as the forge artifact).
+    enable {
+        neoForgeVersion = project.neo_version
     }
+
 
     // This line is optional. Access Transformers are automatically detected
     // accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
@@ -159,7 +157,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 // this works with both building through Gradle and the IDE.
 sourceSets.main.resources.srcDir generateModMetadata
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
-neoForge.ideSyncTask generateModMetadata
+legacyForge.ideSyncTask generateModMetadata
 
 // Example configuration to allow publishing using the maven-publish plugin
 publishing {
@@ -185,6 +183,17 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+tasks.register('syncGeneratedResources', Copy) {
+    from file('src/generated/resources')
+    into layout.buildDirectory.dir('resources/main')
+    dependsOn tasks.named('runData')
+}
+
+tasks.named('runClient').configure {
+    // Ensure datagen output is present in the runtime resources directory.
+    dependsOn tasks.named('syncGeneratedResources')
 }
 
 tasks.named('test') {

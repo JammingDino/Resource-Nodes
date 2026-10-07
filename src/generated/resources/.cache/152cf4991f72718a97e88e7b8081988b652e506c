@@ -1,6 +1,6 @@
-// 1.21.1	2026-04-11T13:29:34.8115199	Tags for minecraft:block mod id jd_resource_nodes
-3007b50b0c7dc297c6d7d31fb74738d6aa47fad1 data/create/tags/block/non_movable.json
-3007b50b0c7dc297c6d7d31fb74738d6aa47fad1 data/minecraft/tags/block/mineable/pickaxe.json
-5eb7b8f4167fd9f059530ac5ee0353b396657a8d data/minecraft/tags/block/needs_diamond_tool.json
-6eb70df3c7ceaf6ea7f5ea59fcb2d3496156f1c2 data/minecraft/tags/block/needs_iron_tool.json
-0502d87d365daacf52def38c9f03ee97e4e632e8 data/minecraft/tags/block/needs_stone_tool.json
+// 1.20.1	2026-04-14T20:19:17.6605103	Tags for minecraft:block mod id jd_resource_nodes
+cd91d8cece489474a876a6860c8195045a4f33ba data/create/tags/blocks/non_movable.json
+cd91d8cece489474a876a6860c8195045a4f33ba data/minecraft/tags/blocks/mineable/pickaxe.json
+5eb7b8f4167fd9f059530ac5ee0353b396657a8d data/minecraft/tags/blocks/needs_diamond_tool.json
+6eb70df3c7ceaf6ea7f5ea59fcb2d3496156f1c2 data/minecraft/tags/blocks/needs_iron_tool.json
+0502d87d365daacf52def38c9f03ee97e4e632e8 data/minecraft/tags/blocks/needs_stone_tool.json

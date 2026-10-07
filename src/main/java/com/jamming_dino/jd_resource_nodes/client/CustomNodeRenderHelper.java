@@ -43,7 +43,7 @@ final class CustomNodeRenderHelper {
     }
 
     private static void renderOverlay(ResourceNodeBlock nodeBlock, PoseStack poseStack, MultiBufferSource bufferSource, int packedOverlay) {
-        ResourceLocation borderTexture = ResourceLocation.fromNamespaceAndPath(ResourceNodes.MODID, "block/input/border_" + nodeBlock.getTier().getSerializedName());
+        ResourceLocation borderTexture = new ResourceLocation(ResourceNodes.MODID, "block/input/border_" + nodeBlock.getTier().getSerializedName());
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(borderTexture);
         if (sprite == null) {
             return;
@@ -107,12 +107,13 @@ final class CustomNodeRenderHelper {
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
 
-        builder.addVertex(matrix, x, y, z)
-                .setColor(r, g, b, a)
-                .setUv(u, v)
-                .setOverlay(overlay)
-                .setLight(light)
-                .setNormal(normalX, normalY, normalZ);
+        builder.vertex(matrix, x, y, z)
+                .color(r, g, b, a)
+                .uv(u, v)
+                .overlayCoords(overlay)
+                .uv2(light)
+                .normal(normalX, normalY, normalZ)
+                .endVertex();
     }
 }
 

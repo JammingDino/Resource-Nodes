@@ -28,9 +28,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
+import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList; // Added
@@ -102,10 +103,7 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
 
         // 2. Silk Touch check
         ItemStack heldItem = player.getMainHandItem();
-        boolean hasSilkTouch = EnchantmentHelper.getItemEnchantmentLevel(
-                level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH),
-                heldItem
-        ) > 0;
+        boolean hasSilkTouch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, heldItem) > 0;
 
         if (hasSilkTouch) {
             if (nodeBe != null) nodeBe.setPermanentlyRemoved(true);
@@ -202,16 +200,19 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
     // --- SHARED HELPER: Smart Drops ---
     private void spawnSmartDrops(Level level, BlockPos pos, List<ItemStack> drops) {
         BlockPos belowPos = pos.below();
-        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, belowPos, Direction.UP);
+        BlockEntity belowBe = level.getBlockEntity(belowPos);
+        LazyOptional<IItemHandler> handler = belowBe != null
+                ? belowBe.getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP)
+                : LazyOptional.empty();
 
-        if (handler != null) {
+        handler.ifPresent(itemHandler -> {
             for (int i = 0; i < drops.size(); i++) {
                 ItemStack stack = drops.get(i);
                 if (stack.isEmpty()) continue;
-                ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, stack, false);
+                ItemStack remainder = ItemHandlerHelper.insertItemStacked(itemHandler, stack, false);
                 drops.set(i, remainder);
             }
-        }
+        });
 
         BlockPos abovePos = pos.above();
         boolean isBelowFree = level.isEmptyBlock(belowPos) || level.getBlockState(belowPos).getCollisionShape(level, belowPos).isEmpty();

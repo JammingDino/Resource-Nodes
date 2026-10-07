@@ -1,6 +1,5 @@
 package com.jamming_dino.jd_resource_nodes.world;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -20,12 +19,13 @@ public class NodeWorldSettingsSavedData extends SavedData {
     public static NodeWorldSettingsSavedData get(ServerLevel level) {
         ServerLevel overworld = level.getServer().overworld();
         return overworld.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(NodeWorldSettingsSavedData::new, NodeWorldSettingsSavedData::load),
+                NodeWorldSettingsSavedData::load,
+                NodeWorldSettingsSavedData::new,
                 DATA_ID
         );
     }
 
-    private static NodeWorldSettingsSavedData load(CompoundTag tag, HolderLookup.Provider provider) {
+    private static NodeWorldSettingsSavedData load(CompoundTag tag) {
         NodeWorldSettingsSavedData data = new NodeWorldSettingsSavedData();
         ListTag list = tag.getList(DISABLED_KEY, Tag.TAG_STRING);
         for (int i = 0; i < list.size(); i++) {
@@ -52,7 +52,7 @@ public class NodeWorldSettingsSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+    public CompoundTag save(CompoundTag tag) {
         ListTag list = new ListTag();
         for (String id : disabledNodes) {
             list.add(StringTag.valueOf(id));

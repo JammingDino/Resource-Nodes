@@ -5,17 +5,17 @@ import com.jamming_dino.jd_resource_nodes.block.ResourceNodeBlock;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.jamming_dino.jd_resource_nodes.command.ScannerCommands;
 import com.jamming_dino.jd_resource_nodes.network.NodeSettingsNetworkSync;
+import com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler;
 import com.jamming_dino.jd_resource_nodes.network.SyncScannerUnlocksPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.level.BlockEvent;
 
-@EventBusSubscriber(modid = ResourceNodes.MODID)
+@Mod.EventBusSubscriber(modid = ResourceNodes.MODID)
 public class ResourceNodesEvents {
 
     @SubscribeEvent
@@ -26,8 +26,8 @@ public class ResourceNodesEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
-            PacketDistributor.sendToPlayer(player, new SyncScannerUnlocksPacket(data.getUnlockedCategories()));
+            ScannerUnlockData data = ScannerUnlockData.get(player);
+            ResourceNodesPacketHandler.sendToPlayer(player, new SyncScannerUnlocksPacket(data.getUnlockedCategories()));
             NodeSettingsNetworkSync.syncTo(player);
         }
     }
@@ -35,12 +35,10 @@ public class ResourceNodesEvents {
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
         if (event.getEntity() instanceof ServerPlayer newPlayer && event.getOriginal() instanceof ServerPlayer oldPlayer) {
-            // Copy data from old player to new player
-            // Attachments may handle this automatically if configured, but this keeps behavior explicit.
-            oldPlayer.getData(ResourceNodes.SCANNER_DATA); // ensure loaded
-            ScannerUnlockData oldData = oldPlayer.getData(ResourceNodes.SCANNER_DATA);
-            ScannerUnlockData newData = newPlayer.getData(ResourceNodes.SCANNER_DATA);
+            ScannerUnlockData oldData = ScannerUnlockData.get(oldPlayer);
+            ScannerUnlockData newData = ScannerUnlockData.get(newPlayer);
             newData.setUnlockedCategories(oldData.getUnlockedCategories());
+            ScannerUnlockData.save(newPlayer, newData);
         }
     }
 

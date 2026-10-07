@@ -1,8 +1,6 @@
 {
-  "parent": "jd_resource_nodes:block/node_layered_cube",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "base": "minecraft:block/stone",
-    "overlay": "jd_resource_nodes:block/input/border_pure",
-    "particle": "minecraft:block/stone"
+    "all": "jd_resource_nodes:block/node_stone_pure"
   }
 }

@@ -3,6 +3,7 @@ package com.jamming_dino.jd_resource_nodes.command;
 import com.jamming_dino.jd_resource_nodes.ResourceNodeData;
 import com.jamming_dino.jd_resource_nodes.ResourceNodes;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
+import com.jamming_dino.jd_resource_nodes.network.ResourceNodesPacketHandler;
 import com.jamming_dino.jd_resource_nodes.network.SyncScannerUnlocksPacket;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -15,7 +16,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -63,7 +63,7 @@ public class ScannerCommands {
             return 0;
         }
 
-        ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
+        ScannerUnlockData data = ScannerUnlockData.get(player);
         if (data.unlock(resource)) {
             syncData(player, data);
             context.getSource().sendSuccess(() -> Component.literal("Unlocked scanning for: " + resource), true);
@@ -78,7 +78,7 @@ public class ScannerCommands {
         ServerPlayer player = context.getSource().getPlayerOrException();
         String resource = StringArgumentType.getString(context, "resource");
 
-        ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
+        ScannerUnlockData data = ScannerUnlockData.get(player);
         if (data.lock(resource)) {
             syncData(player, data);
             context.getSource().sendSuccess(() -> Component.literal("Locked scanning for: " + resource), true);
@@ -91,7 +91,7 @@ public class ScannerCommands {
 
     private static int unlockAll(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
+        ScannerUnlockData data = ScannerUnlockData.get(player);
 
         data.unlockAll(ResourceNodeData.getAllCategories().stream()
                 .map(ResourceNodeData::getCategory)
@@ -104,7 +104,7 @@ public class ScannerCommands {
 
     private static int lockAll(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        ScannerUnlockData data = player.getData(ResourceNodes.SCANNER_DATA);
+        ScannerUnlockData data = ScannerUnlockData.get(player);
 
         data.lockAll();
 
@@ -114,6 +114,7 @@ public class ScannerCommands {
     }
 
     private static void syncData(ServerPlayer player, ScannerUnlockData data) {
-        PacketDistributor.sendToPlayer(player, new SyncScannerUnlocksPacket(data.getUnlockedCategories()));
+        ScannerUnlockData.save(player, data);
+        ResourceNodesPacketHandler.sendToPlayer(player, new SyncScannerUnlocksPacket(data.getUnlockedCategories()));
     }
 }
