@@ -1,7 +1,6 @@
 package com.jamming_dino.jd_resource_nodes.network;
 
-import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
-import net.minecraft.client.Minecraft;
+import com.jamming_dino.jd_resource_nodes.client.NodeSettingsClientCache;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -28,16 +27,8 @@ public record SyncScannerUnlocksPacket(Set<String> unlocks) {
 
     public static void handle(SyncScannerUnlocksPacket payload, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            if (context.getDirection().getReceptionSide().isClient()) {
-                net.minecraft.world.entity.player.Player player = Minecraft.getInstance().player;
-                if (player != null) {
-                    ScannerUnlockData data = ScannerUnlockData.get(player);
-                    data.setUnlockedCategories(payload.unlocks);
-                    ScannerUnlockData.save(player, data);
-                }
-            }
-        });
+        // Client classes stay in NodeSettingsClientCache so dedicated servers never load them.
+        context.enqueueWork(() -> NodeSettingsClientCache.updateScannerUnlocks(payload.unlocks()));
         context.setPacketHandled(true);
     }
 }
