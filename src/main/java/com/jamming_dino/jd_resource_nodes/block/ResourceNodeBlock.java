@@ -107,7 +107,7 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
                 heldItem
         ) > 0;
 
-        if (hasSilkTouch) {
+        if (hasSilkTouch && ResourceNodesConfig.isSilkTouchPickupEnabled()) {
             if (nodeBe != null) nodeBe.setPermanentlyRemoved(true);
             Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(this));
             return true;

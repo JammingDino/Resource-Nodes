@@ -30,7 +30,7 @@ Resource Nodes are designed to be **permanent infrastructure**.
 ### Removing a Node in Survival
 If a node spawned somewhere you don't want it:
 *   **Sneak + mine** it to remove it for good. It drops one of its resource (e.g. 1 Raw Iron), not the node.
-*   **Silk Touch** picks the node up as an item so you can place it elsewhere.
+*   **Silk Touch** picks the node up as an item so you can place it elsewhere (turn off with `silk_touch_pickup`).
 *   In **Creative Mode**, breaking a node removes it.
 
 ### Mining & Regeneration
@@ -58,6 +58,7 @@ If you need to mass-remove nodes using WorldEdit or Commands (since they resist 
 
 Settings live in `config/jd_resource_nodes.json` and the in-game config screen.
 *   **`regeneration_ticks`** (default `600`, 30 seconds): regeneration time for every node. Purity sets the drop amount instead: Impure 1, Normal 2, Pure 4.
+*   **`silk_touch_pickup`** (default `true`): Silk Touch picks nodes up as items. Set to `false` so nodes can't be moved (Silk Touch then mines them normally).
 *   **`ore_replacement_enabled`** (default `true`): turn natural node generation on or off.
 *   **`ore_replacement_chance`** (default `1000`): 1 in this many ores becomes a node.
 *   **`impure_weight` / `normal_weight` / `pure_weight`** (defaults `60` / `30` / `10`): how common each purity is. These are relative weights; `0` disables a purity.
