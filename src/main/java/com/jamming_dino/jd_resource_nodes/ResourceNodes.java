@@ -5,8 +5,10 @@ import com.jamming_dino.jd_resource_nodes.block.entity.ResourceNodeBlockEntity;
 import com.jamming_dino.jd_resource_nodes.capability.ScannerUnlockData;
 import com.jamming_dino.jd_resource_nodes.item.CustomNodeBlockItem;
 import com.jamming_dino.jd_resource_nodes.item.NodeConfiguratorItem;
+import com.jamming_dino.jd_resource_nodes.world.OreToNodeFeature;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -44,6 +46,8 @@ public class ResourceNodes {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, MODID);
+    public static final DeferredHolder<Feature<?>, OreToNodeFeature> ORE_TO_NODE = FEATURES.register("ore_to_node", OreToNodeFeature::new);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MODID);
 
@@ -162,6 +166,7 @@ public class ResourceNodes {
         BLOCK_ENTITIES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         ATTACHMENT_TYPES.register(modEventBus);
+        FEATURES.register(modEventBus);
 
         // REGISTER DATAGEN HERE
         modEventBus.addListener(ResourceNodesDataGen::gatherData);

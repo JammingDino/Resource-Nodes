@@ -2,6 +2,7 @@ package com.jamming_dino.jd_resource_nodes;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.util.RandomSource;
 import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.File;
@@ -29,6 +30,13 @@ public class ResourceNodesConfig {
     // Scanner settings
     public int scanner_radius = 128;
 
+    // World generation: replace 1 in N generated ores with a random-tier node.
+    public boolean ore_replacement_enabled = true;
+    public int ore_replacement_chance = 1000;
+    public int impure_weight = 60;
+    public int normal_weight = 30;
+    public int pure_weight = 10;
+
     // Optional map-pack custom nodes.
     public List<CustomNodeConfig> custom_nodes = new ArrayList<>();
 
@@ -49,6 +57,36 @@ public class ResourceNodesConfig {
 
     public static int getScannerRadius() {
         return INSTANCE.scanner_radius;
+    }
+
+    public static boolean isOreReplacementEnabled() {
+        return INSTANCE.ore_replacement_enabled;
+    }
+
+    public static int getOreReplacementChance() {
+        return INSTANCE.ore_replacement_chance;
+    }
+
+    public static int[] getTierWeights() {
+        return new int[]{INSTANCE.impure_weight, INSTANCE.normal_weight, INSTANCE.pure_weight};
+    }
+
+    public static ResourceNodeTier rollTier(RandomSource random) {
+        int total = INSTANCE.impure_weight + INSTANCE.normal_weight + INSTANCE.pure_weight;
+        if (total <= 0) return ResourceNodeTier.NORMAL;
+        int roll = random.nextInt(total);
+        if (roll < INSTANCE.impure_weight) return ResourceNodeTier.IMPURE;
+        if (roll < INSTANCE.impure_weight + INSTANCE.normal_weight) return ResourceNodeTier.NORMAL;
+        return ResourceNodeTier.PURE;
+    }
+
+    public static void setOreReplacement(boolean enabled, int chance, int impure, int normal, int pure) {
+        INSTANCE.ore_replacement_enabled = enabled;
+        INSTANCE.ore_replacement_chance = Math.max(1, chance);
+        INSTANCE.impure_weight = Math.max(0, impure);
+        INSTANCE.normal_weight = Math.max(0, normal);
+        INSTANCE.pure_weight = Math.max(0, pure);
+        save();
     }
 
     public static List<CustomNodeConfig> getCustomNodes() {
@@ -146,6 +184,12 @@ public class ResourceNodesConfig {
                     if (INSTANCE.scanner_radius < 16 || INSTANCE.scanner_radius > 512) {
                         INSTANCE.scanner_radius = 128;
                     }
+                    if (INSTANCE.ore_replacement_chance < 1) {
+                        INSTANCE.ore_replacement_chance = 1000;
+                    }
+                    INSTANCE.impure_weight = Math.max(0, INSTANCE.impure_weight);
+                    INSTANCE.normal_weight = Math.max(0, INSTANCE.normal_weight);
+                    INSTANCE.pure_weight = Math.max(0, INSTANCE.pure_weight);
                     if (INSTANCE.custom_nodes == null) {
                         INSTANCE.custom_nodes = new ArrayList<>();
                     } else {
