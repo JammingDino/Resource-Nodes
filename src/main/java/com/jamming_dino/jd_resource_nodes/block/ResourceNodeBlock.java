@@ -113,17 +113,20 @@ public class ResourceNodeBlock extends Block implements EntityBlock {
             return true;
         }
 
+        // Like vanilla ores: the wrong tool still breaks the node but drops nothing.
+        boolean canHarvest = player.hasCorrectToolForDrops(state);
+
         // 3. Crouching (Shift) -> DROP ORE & REMOVE
         if (player.isShiftKeyDown()) {
             if (nodeBe != null) nodeBe.setPermanentlyRemoved(true);
             // Just one drop for breaking the block itself
-            dropConfiguredLoot(level, pos, 1);
+            if (canHarvest) dropConfiguredLoot(level, pos, 1);
             return true;
         }
 
         // 4. Normal Mining -> REGENERATE
         // Loop drops based on tier
-        dropConfiguredLoot(level, pos, tier.getDropCount());
+        if (canHarvest) dropConfiguredLoot(level, pos, tier.getDropCount());
         deplete(level, pos, state);
 
         // Vanilla Tool Damage Logic
