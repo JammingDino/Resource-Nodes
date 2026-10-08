@@ -243,6 +243,12 @@ public class ResourceNodes {
     }
 
     private static void registerConfiguredCustomNodes() {
+        // Custom nodes come from the local config. If datagen saw them, they'd be baked into the shipped tags,
+        // and 1.20.1 drops a whole tag (e.g. mineable/pickaxe) when any entry is missing at runtime.
+        if (net.minecraftforge.data.loading.DatagenModLoader.isRunningDataGen()) {
+            return;
+        }
+
         for (ResourceNodesConfig.CustomNodeConfig config : ResourceNodesConfig.getCustomNodes()) {
             CustomResourceNodeDefinition definition = CustomResourceNodeDefinition.fromConfig(config);
             if (definition == null) {

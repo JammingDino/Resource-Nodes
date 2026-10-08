@@ -56,12 +56,6 @@
     "jd_resource_nodes:node_nether_quartz_pure",
     "jd_resource_nodes:node_ancient_debris_impure",
     "jd_resource_nodes:node_ancient_debris_normal",
-    "jd_resource_nodes:node_ancient_debris_pure",
-    "jd_resource_nodes:node_custom_create_andesite_alloy_block_create_andesite_alloy_all_impure",
-    "jd_resource_nodes:node_custom_create_andesite_alloy_block_create_andesite_alloy_all_normal",
-    "jd_resource_nodes:node_custom_create_andesite_alloy_block_create_andesite_alloy_all_pure",
-    "jd_resource_nodes:node_custom_create_brass_block_create_brass_ingot_all_impure",
-    "jd_resource_nodes:node_custom_create_brass_block_create_brass_ingot_all_normal",
-    "jd_resource_nodes:node_custom_create_brass_block_create_brass_ingot_all_pure"
+    "jd_resource_nodes:node_ancient_debris_pure"
   ]
 }
