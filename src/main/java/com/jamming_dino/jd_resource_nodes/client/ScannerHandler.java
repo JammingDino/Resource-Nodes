@@ -69,7 +69,8 @@ public class ScannerHandler {
             return;
         }
 
-        if (event.getKey() != ResourceNodesKeys.PING_KEY.getKey().getValue()) {
+        // Unbound keys and some special keys both report -1, so an unbound scanner key must be ignored.
+        if (ResourceNodesKeys.PING_KEY.isUnbound() || event.getKey() != ResourceNodesKeys.PING_KEY.getKey().getValue()) {
             return;
         }
 
