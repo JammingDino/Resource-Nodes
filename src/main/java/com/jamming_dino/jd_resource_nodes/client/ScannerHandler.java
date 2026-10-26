@@ -73,7 +73,8 @@ public class ScannerHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        if (event.getKey() == ResourceNodesKeys.PING_KEY.getKey().getValue()) {
+        // Unbound keys and some special keys both report -1, so an unbound scanner key must be ignored.
+        if (!ResourceNodesKeys.PING_KEY.isUnbound() && event.getKey() == ResourceNodesKeys.PING_KEY.getKey().getValue()) {
             if (event.getAction() == 1) { // Pressed
                 if (!isRadialMenuOpen) {
                     if (mc.screen != null) return;
